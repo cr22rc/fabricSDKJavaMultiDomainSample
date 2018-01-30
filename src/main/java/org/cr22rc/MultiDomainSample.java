@@ -307,7 +307,7 @@ public class MultiDomainSample {
                                         + "transaction id: %s, event payload: \"%s\", from eventhub: %s",
                                 handle, chaincodeEvent.getChaincodeId(),
                                 chaincodeEvent.getEventName(), chaincodeEvent.getTxId(),
-                                new String(chaincodeEvent.getPayload()), blockEvent.getEventHub().toString());
+                                new String(chaincodeEvent.getPayload()), blockEvent.getPeer().toString());
 
                     });
 
@@ -553,14 +553,14 @@ public class MultiDomainSample {
                     }
 
                 }
-                assert (numberEventHubs == chaincodeEvents.size());
+
 
                 for (ChaincodeEventCapture chaincodeEventCapture : chaincodeEvents) {
 
                     BlockEvent blockEvent = chaincodeEventCapture.blockEvent;
                     assert blockEvent != null : "chaincodeEventCapture.blockEvent is null!";
                     assert channelName.equals(blockEvent.getChannelId()) : format("Expected channel name %s, but got %s", channelName, blockEvent.getChannelId());
-                    assert channel.getEventHubs().contains(blockEvent.getEventHub()) : "Event hub is not part of channel!";
+                    assert channel.getPeers().contains(blockEvent.getPeer()) : "Peer is not part of channel!";
 
                 }
 
