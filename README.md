@@ -1,0 +1,1 @@
+# Sample cross domain application
