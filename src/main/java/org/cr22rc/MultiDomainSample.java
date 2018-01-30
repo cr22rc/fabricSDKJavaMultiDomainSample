@@ -17,7 +17,6 @@ package org.cr22rc;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -31,7 +30,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +49,9 @@ import org.hyperledger.fabric.sdk.ChaincodeID;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.ChannelConfiguration;
 import org.hyperledger.fabric.sdk.Enrollment;
-import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.HFClient;
 import org.hyperledger.fabric.sdk.InstallProposalRequest;
 import org.hyperledger.fabric.sdk.InstantiateProposalRequest;
-import org.hyperledger.fabric.sdk.NetworkConfig;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.ProposalResponse;
@@ -67,8 +63,6 @@ import org.hyperledger.fabric.sdk.TxReadWriteSetInfo;
 import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric.sdk.exception.TransactionEventException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
-import org.hyperledger.fabric_ca.sdk.HFCAClient;
-import org.hyperledger.fabric_ca.sdk.HFCAInfo;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -112,12 +106,6 @@ public class MultiDomainSample {
 
         client0.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-//        HFCAClient ca0 = constructFabricCAEndpoint("ca0", "http://localhost:7054");
-
-//        SampleUser registrar0 = new SampleUser(ORG0MSP, "admin");
-//
-//        registrar0.setEnrollment(ca0.enroll(registrar0.getName(), "adminpw"));
-
         SampleUser peerAdmin0 = new SampleUser(ORG0MSP, "peerOrg1Admin");
         String certificate = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
 
@@ -134,17 +122,13 @@ public class MultiDomainSample {
                 new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg2})), true);
 
+        installChaincode(client0,client0FooChannel, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})));
+
         // now again as the other org.
 
         HFClient client1 = HFClient.createNewInstance();
 
         client1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-
-//        HFCAClient ca1 = constructFabricCAEndpoint("ca0", "http://localhost:7054");
-//
-//        SampleUser registrar0 = new SampleUser(ORG1MSP, "admin");
-//
-//        registrar0.setEnrollment(ca0.enroll(registrar0.getName(), "adminpw"));
 
         SampleUser peerAdmin1 = new SampleUser(ORG1MSP, "peerOrg2Admin");
         String certificate1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
@@ -162,51 +146,11 @@ public class MultiDomainSample {
                 new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})), false);
 
+        installChaincode(client1,client1FooChannel, new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})));
+
         runChannel(client1, client1FooChannel, 0);
 
         System.exit(0);
-
-//
-//        NetworkConfig networkConfig = parseNetworkConfigFile(new File(NETWORK_CONFIG_FILE));
-//
-//        SampleUser adminOrg1;
-//
-//        if (SAMPLE_STORE.hasMember(PEER_ADMIN_NAME, NETWORK_CONFIG_PEERORG)) {
-//            admin = SAMPLE_STORE.getMember(PEER_ADMIN_NAME, NETWORK_CONFIG_PEERORG);
-//        } else {
-//            NetworkConfig.OrganizationConfig peerOrg1 = networkConfig.getOrganization(NETWORK_CONFIG_PEERORG);
-//            NetworkConfig.OrganizationConfig.CertificateAuthorityConfig certificateAuthority = peerOrg1.getCertificateAuthority(NETWORK_CONFIG_PEERORG_CA);
-//
-//            NetworkConfig.NetworkConfigUser networkConfigRegistrar = certificateAuthority.getRegistrar(PEER_ADMIN_NAME);
-//            admin = SAMPLE_STORE.getMember(PEER_ADMIN_NAME, NETWORK_CONFIG_PEERORG);
-//            admin.setEnrollmentSecret(networkConfigRegistrar.getEnrollSecret());
-//            admin.setAffiliation(networkConfigRegistrar.getAffiliation());
-//            admin.setMspId(networkConfigRegistrar.getMspId());
-//
-//        }
-//
-//        assert admin != null;
-//
-//        if (!admin.isEnrolled()) {
-//            HFCAClient hfcaClient = constructFabricCAEndpoint(networkConfig);
-//
-//            Enrollment enrollment = hfcaClient.enroll(admin.getName(), admin.getEnrollmentSecret());
-//            admin.setEnrollment(enrollment);
-//            User.userContextCheck(admin);
-//
-//            out("Peer Admin %s not previously enrolled. Make sure all peers include certificate.", admin.getName());
-//            printUser(admin);
-//            System.exit(8);
-//        }
-//
-//        HFClient client = HFClient.createNewInstance();
-//        client.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-//        client.setUserContext(admin);
-//
-//        Channel testChannel = constructChannelFromNetworkConfig(client, networkConfig, TEST_CHANNEL);
-//        runChannel(client, testChannel, 10);
-//        testChannel.shutdown(true);
-//        out("Channel %s shutdown is done", testChannel.getName());
 
     }
 
@@ -221,6 +165,54 @@ public class MultiDomainSample {
         PrivateKey privateKey = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getPrivateKey(pemPair);
 
         return privateKey;
+    }
+
+    void installChaincode(HFClient client, Channel channel, Collection<Peer> peersFromOrg) throws Exception {
+
+        Collection<ProposalResponse> successful = new LinkedList<>();
+        Collection<ProposalResponse> failed = new LinkedList<>();
+
+        // Register a chaincode event listener that will trigger for any chaincode id and only for EXPECTED_EVENT_NAME event.
+
+        final String chaincodeName = CHAIN_CODE_NAME;
+        ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName(chaincodeName)
+                .setVersion(CHAIN_CODE_VERSION)
+                .setPath(CHAIN_CODE_PATH).build();
+
+        InstallProposalRequest installProposalRequest = client.newInstallProposalRequest();
+        installProposalRequest.setChaincodeID(chaincodeID);
+
+        installProposalRequest.setChaincodeSourceLocation(new File("chaincode/gocc/sample1"));
+
+        installProposalRequest.setChaincodeVersion(CHAIN_CODE_VERSION);
+
+        out("Sending install proposal");
+
+        ////////////////////////////
+        // only a client from the same org as the peer can issue an install request
+        int numInstallProposal = 0;
+        //    Set<String> orgs = orgPeers.keySet();
+        //   for (SampleOrg org : testSampleOrgs) {
+
+      ;
+        numInstallProposal = numInstallProposal + peersFromOrg.size();
+        Collection<ProposalResponse> responses = client.sendInstallProposal(installProposalRequest, peersFromOrg);
+
+        for (ProposalResponse response : responses) {
+            if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
+                out("Successful install proposal response Txid: %s from peer %s", response.getTransactionID(), response.getPeer().getName());
+                successful.add(response);
+            } else {
+                failed.add(response);
+            }
+        }
+
+        out("Received %d install proposal responses. Successful+verified: %d . Failed: %d", numInstallProposal, successful.size(), failed.size());
+
+        if (failed.size() > 0) {
+            ProposalResponse first = failed.iterator().next();
+            fail("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
+        }
     }
 
     private Channel constructChannel(String name, HFClient client, User peerAdmin, Collection<Orderer> orderers,
@@ -275,74 +267,6 @@ public class MultiDomainSample {
 
     }
 
-    private Channel constructChannelFromNetworkConfig(HFClient client, NetworkConfig networkConfig, String channelName) throws Exception {
-
-//        Map<String, Orderer> orderers = new HashMap<>();
-//        Map<String, Peer> peers = new HashMap<>();
-//        Map<String, EventHub> eventHubs = new HashMap<>();
-//
-//        constructFabricEndpointsNetworkConfig(client, networkConfig, orderers, peers, eventHubs);
-//        NetworkConfig.ChannelConfig networkConfigChannel = networkConfig.getChannel(channelName);
-//
-//        //If channel information exists in the configuration then just filter it out otherwise just assume all;
-//        if (null != networkConfigChannel) {
-//
-//            HashMap<String, Orderer> channelOrders = new HashMap<>(orderers); //copy
-//            for (String name : orderers.keySet()) {
-//                if (null == networkConfigChannel.getOrderer(name)) {
-//                    channelOrders.remove(name);
-//                }
-//            }
-//            orderers = channelOrders;
-//
-//            HashMap<String, Peer> channelPeers = new HashMap<>(peers); //copies..
-//            HashMap<String, EventHub> channelEventHubs = new HashMap<>(eventHubs);
-//
-//            for (String name : peers.keySet()) {
-//                if (null == networkConfigChannel.getPeer(name)) {
-//                    channelPeers.remove(name);
-//                    channelEventHubs.remove(name);
-//                }
-//            }
-//            peers = channelPeers;
-//            eventHubs = channelEventHubs;
-//        }
-//
-//        assert !orderers.isEmpty() : "No Orderers were found in network configuration file!";
-//        assert !peers.isEmpty() : "No Peers were found in network configuration file!";
-//        //     assert !eventHubs.isEmpty() : "No Event hubs were found in network configuration file!";
-//
-//        Channel channel = client.newChannel(channelName);
-//
-//        for (Orderer orderer : orderers.values()) {
-//            channel.addOrderer(orderer);
-//        }
-//
-//        for (EventHub eventHub : eventHubs.values()) {
-//            channel.addEventHub(eventHub);
-//        }
-//
-//        for (Peer peer : peers.values()) {
-//
-//            Set<String> channels = client.queryChannels(peer);
-//            if (!channels.contains(channelName)) {
-//
-//                out("Need to join peer %s to channel %s", peer.getName(), channelName);
-//                channel.joinPeer(peer);
-//
-//            } else {
-//                channel.addPeer(peer);
-//            }
-//
-//        }
-//
-//        channel.initialize();
-//        return channel;
-
-        return null;
-
-    }
-
     //CHECKSTYLE.OFF: Method length is 320 lines (max allowed is 150).
     void runChannel(HFClient client, Channel channel, int delta) {
 
@@ -364,8 +288,6 @@ public class MultiDomainSample {
             final String channelName = channel.getName();
 
             out("Running channel %s", channelName);
-//            channel.setTransactionWaitTime(TRANSACTION_WAIT_TIME);
-//            channel.setDeployWaitTime(DEPLOY_WAIT_TIME);
 
             Collection<Orderer> orderers = channel.getOrderers();
             final ChaincodeID chaincodeID;
@@ -389,7 +311,7 @@ public class MultiDomainSample {
 
                     });
 
-            final String chaincodeName = CHAIN_CODE_NAME + "_" + System.currentTimeMillis();
+            final String chaincodeName = CHAIN_CODE_NAME;
 
             chaincodeID = ChaincodeID.newBuilder().setName(chaincodeName)
                     .setVersion(CHAIN_CODE_VERSION)
@@ -401,40 +323,6 @@ public class MultiDomainSample {
 
             out("Creating install proposal");
 
-            InstallProposalRequest installProposalRequest = client.newInstallProposalRequest();
-            installProposalRequest.setChaincodeID(chaincodeID);
-
-            installProposalRequest.setChaincodeSourceLocation(new File("chaincode/gocc/sample1"));
-
-            installProposalRequest.setChaincodeVersion(CHAIN_CODE_VERSION);
-
-            out("Sending install proposal");
-
-            ////////////////////////////
-            // only a client from the same org as the peer can issue an install request
-            int numInstallProposal = 0;
-            //    Set<String> orgs = orgPeers.keySet();
-            //   for (SampleOrg org : testSampleOrgs) {
-
-            Collection<Peer> peersFromOrg = channel.getPeers();
-            numInstallProposal = numInstallProposal + peersFromOrg.size();
-            responses = client.sendInstallProposal(installProposalRequest, peersFromOrg);
-
-            for (ProposalResponse response : responses) {
-                if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
-                    out("Successful install proposal response Txid: %s from peer %s", response.getTransactionID(), response.getPeer().getName());
-                    successful.add(response);
-                } else {
-                    failed.add(response);
-                }
-            }
-
-            out("Received %d install proposal responses. Successful+verified: %d . Failed: %d", numInstallProposal, successful.size(), failed.size());
-
-            if (failed.size() > 0) {
-                ProposalResponse first = failed.iterator().next();
-                fail("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
-            }
 
             ///////////////
             //// Instantiate chaincode.
@@ -668,11 +556,6 @@ public class MultiDomainSample {
                 assert (numberEventHubs == chaincodeEvents.size());
 
                 for (ChaincodeEventCapture chaincodeEventCapture : chaincodeEvents) {
-//                    assertEquals(chaincodeEventListenerHandle, chaincodeEventCapture.handle);
-//                    assertEquals(testTxID, chaincodeEventCapture.chaincodeEvent.getTxId());
-//                    assertEquals(EXPECTED_EVENT_NAME, chaincodeEventCapture.chaincodeEvent.getEventName());
-//                    assertTrue(Arrays.equals(EXPECTED_EVENT_DATA, chaincodeEventCapture.chaincodeEvent.getPayload()));
-//                    assertEquals(chaincodeName, chaincodeEventCapture.chaincodeEvent.getChaincodeId());
 
                     BlockEvent blockEvent = chaincodeEventCapture.blockEvent;
                     assert blockEvent != null : "chaincodeEventCapture.blockEvent is null!";
@@ -701,86 +584,6 @@ public class MultiDomainSample {
 
     private void printUser(User user) {
         out("User: %s, MSPID: %s\nEnrollment certificate:\n%s", user.getName(), user.getMspId(), user.getEnrollment().getCert());
-    }
-
-    private void constructFabricEndpointsNetworkConfig(HFClient client, NetworkConfig networkConfig,
-                                                       Map<String, Orderer> orderers,
-                                                       Map<String, Peer> peers, Map<String, EventHub> eventHubs) throws Exception {
-
-//        for (NetworkConfig.OrdererConfig ordererConfig : networkConfig.getOrderers().values()) {
-//
-//            Properties properties = ordererConfig.getProperties();
-//            properties.setProperty("sslProvider", "openSSL");
-//            properties.setProperty("negotiationType", "TLS");
-//
-//            String pemString = ordererConfig.getTLSCerts();
-//            if (pemString != null) {
-//
-//                properties.put("pemBytes", pemString.getBytes());
-//
-//            }
-//
-//            orderers.put(ordererConfig.getName(), client.newOrderer(ordererConfig.getName(), ordererConfig.getURL(),
-//                    properties));
-//        }
-//
-//        for (NetworkConfig.OrganizationConfig.PeerConfig peerConfig : networkConfig.getOrganization(NETWORK_CONFIG_PEERORG).getPeers().values()) {
-//
-//            Properties properties = peerConfig.getProperties();
-//            properties.setProperty("sslProvider", "openSSL");
-//            properties.setProperty("negotiationType", "TLS");
-//
-//            String pemString = peerConfig.getTLSCerts();
-//            if (null != pemString) {
-//                properties.put("pemBytes", pemString.getBytes());
-//
-//            }
-//
-//            peers.put(peerConfig.getName(), client.newPeer(peerConfig.getName(), peerConfig.getURL(),
-//                    properties));
-//
-//            if (peerConfig.getEventURL() != null || !peerConfig.getEventURL().isEmpty()) {
-//                EventHub eventHub = client.newEventHub(peerConfig.getName(), peerConfig.getEventURL(), properties);
-//                eventHubs.put(eventHub.getName(), eventHub);
-//
-//            }
-//        }
-
-    }
-
-    private HFCAClient constructFabricCAEndpoint(String caName, String url) throws Exception {
-
-//        //Get a fabric ca for the network.
-//
-//        NetworkConfig.OrganizationConfig peerOrg1 = networkConfig.getOrganization(NETWORK_CONFIG_PEERORG);
-//
-//        NetworkConfig.OrganizationConfig.CertificateAuthorityConfig certificateAuthority = peerOrg1.getCertificateAuthority(NETWORK_CONFIG_PEERORG_CA);
-//
-//        Properties properties = new Properties();
-//        properties.put("pemBytes", certificateAuthority.getTLSCerts().getBytes());
-
-        HFCAClient hfcaClient = HFCAClient.createNewInstance(caName, url, new Properties());
-        hfcaClient.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
-
-        HFCAInfo info = hfcaClient.info(); //basic check if it connects.
-        assert info != null : "hfcaClient.info() is null";
-        return hfcaClient;
-
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //                    Network configuration
-
-    private static NetworkConfig parseNetworkConfigFile(File parseFilie) throws FileNotFoundException {
-
-//        JsonReader reader = Json.createReader(new BufferedReader(new FileReader(parseFilie)));
-//        JsonObject jobj = (JsonObject) reader.read();
-//        NetworkConfig networkConfig = new NetworkConfig(jobj);
-//
-//        return networkConfig;
-
-        return null;
-
     }
 
     static void out(String format, Object... args) {
