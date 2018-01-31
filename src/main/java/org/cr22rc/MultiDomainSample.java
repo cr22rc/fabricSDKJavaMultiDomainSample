@@ -124,7 +124,7 @@ public class MultiDomainSample {
 
         installChaincode(client0,client0FooChannel, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})));
 
-        // now again as the other org.
+        // now again as the other org. this would usually be done in another application or instance in that organization
 
         HFClient client1 = HFClient.createNewInstance();
 
