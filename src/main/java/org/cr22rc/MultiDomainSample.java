@@ -20,11 +20,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -44,6 +41,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.BlockInfo;
 import org.hyperledger.fabric.sdk.BlockchainInfo;
+import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
 import org.hyperledger.fabric.sdk.ChaincodeEvent;
 import org.hyperledger.fabric.sdk.ChaincodeID;
 import org.hyperledger.fabric.sdk.Channel;
@@ -69,18 +67,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MultiDomainSample {
 
-    public static final String NETWORK_CONFIG_PEERORG_CA = "fabric-ca-peerorg1-23033a"; //Only test with this CA
-
-    public static final String NETWORK_CONFIG_PEERORG = "PeerOrg1"; //Only test with this peer org
-
-    public static final String TEST_CHANNEL = "ricks-test-channel";
-
-    public static final String NETWORK_CONFIG_FILE = "bmxServiceCredentials.json";
-
-    public static final String PEER_ADMIN_NAME = "admin";
-
     private static final int TRANSACTION_WAIT_TIME = 60000 * 6;
-    private static final int DEPLOY_WAIT_TIME = 60000 * 5;
     private static final String EXPECTED_EVENT_NAME = "event";
     private static final String CHAIN_CODE_NAME = "example_cc_go";
     private static final String CHAIN_CODE_PATH = "github.com/example_cc";
@@ -90,8 +77,8 @@ public class MultiDomainSample {
     private String testTxID;
 
     //
-    private static final String ORG0MSP = "Org1MSP";
-    private static final String ORG1MSP = "Org2MSP";
+    private static final String ORG1MSP = "Org1MSP";
+    private static final String ORG2MSP = "Org2MSP";
 
     public static void main(String[] args) throws Exception {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
@@ -106,7 +93,7 @@ public class MultiDomainSample {
 
         client0.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-        SampleUser peerAdmin0 = new SampleUser(ORG0MSP, "peerOrg1Admin");
+        SampleUser peerAdmin0 = new SampleUser(ORG1MSP, "peerOrg1Admin");
         String certificate = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
 
         PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/6b32e59640c594cf633ad8c64b5958ef7e5ba2a205cfeefd44a9e982ce624d93_sk")));
@@ -122,7 +109,7 @@ public class MultiDomainSample {
                 new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg2})), true);
 
-        installChaincode(client0,client0FooChannel, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})));
+        installChaincode(client0, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})));
 
         // now again as the other org. this would usually be done in another application or instance in that organization
 
@@ -130,7 +117,7 @@ public class MultiDomainSample {
 
         client1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-        SampleUser peerAdmin1 = new SampleUser(ORG1MSP, "peerOrg2Admin");
+        SampleUser peerAdmin1 = new SampleUser(ORG2MSP, "peerOrg2Admin");
         String certificate1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
 
         PrivateKey privateKey1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/b2e2536de633960859d965f02b296083d1e8aa1e868016417c4e4fb760270b96_sk")));
@@ -146,15 +133,14 @@ public class MultiDomainSample {
                 new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})), false);
 
-        installChaincode(client1,client1FooChannel, new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})));
+        installChaincode(client1, new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})));
 
-        runChannel(client1, client1FooChannel, 0);
-
-        System.exit(0);
+        runChannel(client1, client1FooChannel, 0, true);
+     //   runChannel(client0, client0FooChannel, 0);
 
     }
 
-    static PrivateKey getPrivateKeyFromBytes(byte[] data) throws IOException, NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
+    static PrivateKey getPrivateKeyFromBytes(byte[] data) throws IOException {
         final Reader pemReader = new StringReader(new String(data));
 
         final PrivateKeyInfo pemPair;
@@ -162,20 +148,16 @@ public class MultiDomainSample {
             pemPair = (PrivateKeyInfo) pemParser.readObject();
         }
 
-        PrivateKey privateKey = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getPrivateKey(pemPair);
-
-        return privateKey;
+        return new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getPrivateKey(pemPair);
     }
 
-    void installChaincode(HFClient client, Channel channel, Collection<Peer> peersFromOrg) throws Exception {
+    void installChaincode(HFClient client, Collection<Peer> peersFromOrg) throws Exception {
 
         Collection<ProposalResponse> successful = new LinkedList<>();
         Collection<ProposalResponse> failed = new LinkedList<>();
 
         // Register a chaincode event listener that will trigger for any chaincode id and only for EXPECTED_EVENT_NAME event.
-
-        final String chaincodeName = CHAIN_CODE_NAME;
-        ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName(chaincodeName)
+        ChaincodeID chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
                 .setVersion(CHAIN_CODE_VERSION)
                 .setPath(CHAIN_CODE_PATH).build();
 
@@ -191,10 +173,7 @@ public class MultiDomainSample {
         ////////////////////////////
         // only a client from the same org as the peer can issue an install request
         int numInstallProposal = 0;
-        //    Set<String> orgs = orgPeers.keySet();
-        //   for (SampleOrg org : testSampleOrgs) {
 
-      ;
         numInstallProposal = numInstallProposal + peersFromOrg.size();
         Collection<ProposalResponse> responses = client.sendInstallProposal(installProposalRequest, peersFromOrg);
 
@@ -268,7 +247,7 @@ public class MultiDomainSample {
     }
 
     //CHECKSTYLE.OFF: Method length is 320 lines (max allowed is 150).
-    void runChannel(HFClient client, Channel channel, int delta) {
+    void runChannel(HFClient client, Channel channel, int delta, boolean instatiate) {
 
         class ChaincodeEventCapture { //A test class to capture chaincode events
             final String handle;
@@ -311,9 +290,7 @@ public class MultiDomainSample {
 
                     });
 
-            final String chaincodeName = CHAIN_CODE_NAME;
-
-            chaincodeID = ChaincodeID.newBuilder().setName(chaincodeName)
+            chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
                     .setVersion(CHAIN_CODE_VERSION)
                     .setPath(CHAIN_CODE_PATH).build();
 
@@ -323,18 +300,22 @@ public class MultiDomainSample {
 
             out("Creating install proposal");
 
-
             ///////////////
             //// Instantiate chaincode.
             InstantiateProposalRequest instantiateProposalRequest = client.newInstantiationProposalRequest();
             instantiateProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
             instantiateProposalRequest.setChaincodeID(chaincodeID);
             instantiateProposalRequest.setFcn("init");
-            instantiateProposalRequest.setArgs(new String[] {"a", "500", "b", "" + (200 + delta)});
+            instantiateProposalRequest.setArgs(new String[] {"a", "5500", "b", "" + (200 + delta)});
             Map<String, byte[]> tm = new HashMap<>();
             tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
             tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
             instantiateProposalRequest.setTransientMap(tm);
+
+            ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
+            //chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicy.yaml"));
+            chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicyAllMembers.yaml"));
+            instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
             out("Sending instantiateProposalRequest to all peers with arguments: a and b set to 100 and %s respectively", "" + (200 + delta));
             successful.clear();
@@ -386,7 +367,10 @@ public class MultiDomainSample {
 
                     out("sending transactionProposal to all peers with arguments: move(a,b,100)");
 
+                    //            LinkedList<Peer> singlepeers = new LinkedList<>(Arrays.asList(new Peer[] {channel.getPeers().iterator().next()}));
+
                     Collection<ProposalResponse> transactionPropResp = channel.sendTransactionProposal(transactionProposalRequest, channel.getPeers());
+                    // Collection<ProposalResponse> transactionPropResp = channel.sendTransactionProposal(transactionProposalRequest, singlepeers);
                     for (ProposalResponse response : transactionPropResp) {
                         if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
                             out("Successful transaction proposal response Txid: %s from peer %s", response.getTransactionID(), response.getPeer().getName());
@@ -554,7 +538,6 @@ public class MultiDomainSample {
 
                 }
 
-
                 for (ChaincodeEventCapture chaincodeEventCapture : chaincodeEvents) {
 
                     BlockEvent blockEvent = chaincodeEventCapture.blockEvent;
@@ -567,8 +550,6 @@ public class MultiDomainSample {
             }
 
             out("Running for Channel %s done", channelName);
-
-            return;
 
         } catch (Exception e) {
             out("Caught an exception running channel %s", channel.getName());
