@@ -43,6 +43,7 @@ import org.hyperledger.fabric.sdk.BlockInfo;
 import org.hyperledger.fabric.sdk.BlockchainInfo;
 import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
 import org.hyperledger.fabric.sdk.ChaincodeID;
+import org.hyperledger.fabric.sdk.ChaincodeResponse;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.Channel.PeerOptions;
 import org.hyperledger.fabric.sdk.ChannelConfiguration;
@@ -138,7 +139,7 @@ public class MultiDomainSample {
 
         Peer clientOrg2peerOrg1 = clientOrg2.newPeer("clientOrg2_peer0.org1.example.com", "grpc://localhost:7051");
         Peer clientOrg2peerOrg2 = clientOrg2.newPeer("clientOrg2_peer0.org2.example.com", "grpc://localhost:8051");
-       // EventHub clien10eventHubOrg2 = clientOrg1.newEventHub("clientOrg2_peer0.org2.example.com", "grpc://localhost:8053");
+        // EventHub clien10eventHubOrg2 = clientOrg1.newEventHub("clientOrg2_peer0.org2.example.com", "grpc://localhost:8053");
 
         Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdminOrg2, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg2orderer})),
                 new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})), // join org2's peer.
@@ -156,8 +157,8 @@ public class MultiDomainSample {
 
         clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
         clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
-       // clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
-       // clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
+        // clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
+        // clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
         clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
@@ -232,8 +233,6 @@ public class MultiDomainSample {
             fail("Not enough endorsers for install :" + successful.size() + ".  " + first.getMessage());
         }
     }
-
-
 
     private Channel constructChannel(String name, HFClient client, User peerAdmin, Collection<Orderer> orderers,
                                      Collection<Peer> joinPeers,
@@ -310,8 +309,12 @@ public class MultiDomainSample {
                     .setVersion(CHAIN_CODE_VERSION)
                     .setPath(CHAIN_CODE_PATH).build();
 
-            CompletableFuture<Boolean> booleanCompletableFuture;
-            if (instantiate) {
+            final CompletableFuture<Void> booleanCompletableFuture = new CompletableFuture();
+
+            if (!instantiate) {
+                //  completed ok for no instantiate
+                booleanCompletableFuture.complete(null);
+            } else {
 
                 ///////////////
                 //// Instantiate chaincode.
@@ -354,15 +357,18 @@ public class MultiDomainSample {
                 ///////////////
                 /// Send instantiate transaction to orderer
                 out("Sending instantiateTransaction to orderer with a and b set to 100 and %s respectively", "" + (200 + delta));
-                booleanCompletableFuture = channel.sendTransaction(successful, orderers).thenApply(transactionEvent -> {
-                    // assert (transactionEvent.isValid()); // must be valid to be here.
+                channel.sendTransaction(successful, orderers).thenApply(transactionEvent -> {
 
-                    return transactionEvent.isValid() ? new CompletableFuture().complete(true) : new CompletableFuture().completeExceptionally(new TransactionException(""));
-//                out("Finished instantiate transaction with transaction id %s", transactionEvent.getTransactionID());
+                    if (transactionEvent.isValid()) {
+                        booleanCompletableFuture.complete(null); // it's ok.
+                    } else {
+                        booleanCompletableFuture.completeExceptionally(new TransactionException(format("Transaction %s failed validation code %d",
+                                transactionEvent.getTransactionID(), transactionEvent.getValidationCode())));
+                    }
+
+                    return booleanCompletableFuture;
+
                 });
-            } else {
-                booleanCompletableFuture = new CompletableFuture(); // fake future on instantiate
-                booleanCompletableFuture.complete(true);
             }
 
             //  CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = channel.sendTransaction(successful, orderers).thenApply()
