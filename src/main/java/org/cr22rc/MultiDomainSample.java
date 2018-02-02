@@ -371,7 +371,6 @@ public class MultiDomainSample {
                 });
             }
 
-            //  CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = channel.sendTransaction(successful, orderers).thenApply()
             booleanCompletableFuture.thenApply(notused -> {
                 try {
                     successful.clear();
