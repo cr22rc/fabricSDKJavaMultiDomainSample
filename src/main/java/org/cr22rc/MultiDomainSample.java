@@ -310,11 +310,11 @@ public class MultiDomainSample {
                     .setVersion(CHAIN_CODE_VERSION)
                     .setPath(CHAIN_CODE_PATH).build();
 
-            final CompletableFuture<Void> booleanCompletableFuture = new CompletableFuture();
+            final CompletableFuture<Void> instantiateChaincodeCompletableFuture = new CompletableFuture();
 
             if (!instantiate) {
                 //  completed ok for no instantiate
-                booleanCompletableFuture.complete(null);
+                instantiateChaincodeCompletableFuture.complete(null);
             } else {
 
                 ///////////////
@@ -361,18 +361,18 @@ public class MultiDomainSample {
                 channel.sendTransaction(successful, orderers).thenApply(transactionEvent -> {
 
                     if (transactionEvent.isValid()) {
-                        booleanCompletableFuture.complete(null); // it's ok.
+                        instantiateChaincodeCompletableFuture.complete(null); // it's ok.
                     } else {
-                        booleanCompletableFuture.completeExceptionally(new TransactionException(format("Transaction %s failed validation code %d",
+                        instantiateChaincodeCompletableFuture.completeExceptionally(new TransactionException(format("Transaction %s failed validation code %d",
                                 transactionEvent.getTransactionID(), transactionEvent.getValidationCode())));
                     }
 
-                    return booleanCompletableFuture;
+                    return instantiateChaincodeCompletableFuture;
 
                 });
             }
 
-            booleanCompletableFuture.thenApply(notused -> {
+            instantiateChaincodeCompletableFuture.thenApply(notused -> {
                 try {
                     successful.clear();
                     failed.clear();
