@@ -143,14 +143,14 @@ public class MultiDomainSample {
         Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdminOrg2,
                 createCollection(clientOrg2orderer),
                 createCollection(clientOrg2peerOrg2), // join org2's peer.
-                createCollection(clientOrg2peerOrg1), // just add org1's peer.
+                createCollection(clientOrg2peerOrg1), // just add org1's peer. It's been joined in the channel so it's ok.
                 Collections.EMPTY_LIST, // no event hubs.
                 false); // no need to create channel was done before.
 
         //Install chaincode on org2's peer.
         installChaincode(clientOrg2, createCollection(clientOrg2peerOrg2));
 
-        //Now that clientOrg2 org2 peer has joined, channelOrg1 can register events on it.
+        //Now that clientOrg2 org2 peer has joined, channelOrg1 can register to receive events on it.
         // Recreate the channel for org1
 
         clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
