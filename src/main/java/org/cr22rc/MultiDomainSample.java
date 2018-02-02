@@ -97,12 +97,12 @@ public class MultiDomainSample {
 
         clientOrg1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-        SampleUser peerAdmin0 = new SampleUser(ORG1MSP, "peerOrg1Admin");
+        SampleUser peerAdminOrg1 = new SampleUser(ORG1MSP, "peerOrg1Admin");
         String certificate = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
 
         PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/6b32e59640c594cf633ad8c64b5958ef7e5ba2a205cfeefd44a9e982ce624d93_sk")));
-        peerAdmin0.setEnrollment(new SampleEnrollment(privateKey, certificate));
-        clientOrg1.setUserContext(peerAdmin0);
+        peerAdminOrg1.setEnrollment(new SampleEnrollment(privateKey, certificate));
+        clientOrg1.setUserContext(peerAdminOrg1);
 
         Orderer clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
@@ -111,7 +111,7 @@ public class MultiDomainSample {
         EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
         EventHub clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
-        Channel clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
+        Channel clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
                 new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1})),
                 Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the chain yet.!
                 Collections.EMPTY_LIST, // use no event hubs.
@@ -127,12 +127,12 @@ public class MultiDomainSample {
 
         clientOrg2.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
-        SampleUser peerAdmin1 = new SampleUser(ORG2MSP, "peerOrg2Admin");
+        SampleUser peerAdminOrg2 = new SampleUser(ORG2MSP, "peerOrg2Admin");
         String certificate1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
 
         PrivateKey privateKey1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/b2e2536de633960859d965f02b296083d1e8aa1e868016417c4e4fb760270b96_sk")));
-        peerAdmin1.setEnrollment(new SampleEnrollment(privateKey1, certificate1));
-        clientOrg2.setUserContext(peerAdmin1);
+        peerAdminOrg2.setEnrollment(new SampleEnrollment(privateKey1, certificate1));
+        clientOrg2.setUserContext(peerAdminOrg2);
 
         Orderer clientOrg2orderer = clientOrg2.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
@@ -140,7 +140,7 @@ public class MultiDomainSample {
         Peer clientOrg2peerOrg2 = clientOrg2.newPeer("clientOrg2_peer0.org2.example.com", "grpc://localhost:8051");
        // EventHub clien10eventHubOrg2 = clientOrg1.newEventHub("clientOrg2_peer0.org2.example.com", "grpc://localhost:8053");
 
-        Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdmin1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg2orderer})),
+        Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdminOrg2, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg2orderer})),
                 new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})), // join org2's peer.
                 new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg1})), // just add org1's peer.
                 Collections.EMPTY_LIST, // no event hubs.
@@ -159,7 +159,7 @@ public class MultiDomainSample {
        // clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
        // clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
-        clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
+        clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
                 new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1, clientOrg1peerOrg2})), //add both peers.
                 Collections.EMPTY_LIST, // no event hubs.
