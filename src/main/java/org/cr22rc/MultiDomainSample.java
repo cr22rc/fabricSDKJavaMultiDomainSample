@@ -43,7 +43,6 @@ import org.hyperledger.fabric.sdk.BlockInfo;
 import org.hyperledger.fabric.sdk.BlockchainInfo;
 import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
 import org.hyperledger.fabric.sdk.ChaincodeID;
-import org.hyperledger.fabric.sdk.ChaincodeResponse;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.Channel.PeerOptions;
 import org.hyperledger.fabric.sdk.ChannelConfiguration;
@@ -112,8 +111,9 @@ public class MultiDomainSample {
         // EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
         // EventHub clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
-        Channel clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
-                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1})), // join peer org1's peer to the channel.
+        Channel clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1,
+                createCollection(clientOrg1orderer),
+                createCollection(clientOrg1peerOrg1), // join peer org1's peer to the channel.
                 Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the channel yet.!
                 Collections.EMPTY_LIST, // use no event hubs.
                 true); // first time create the channel.
@@ -141,14 +141,15 @@ public class MultiDomainSample {
         Peer clientOrg2peerOrg2 = clientOrg2.newPeer("clientOrg2_peer0.org2.example.com", "grpc://localhost:8051");
         // EventHub clien10eventHubOrg2 = clientOrg1.newEventHub("clientOrg2_peer0.org2.example.com", "grpc://localhost:8053");
 
-        Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdminOrg2, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg2orderer})),
-                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})), // join org2's peer.
-                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg1})), // just add org1's peer.
+        Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdminOrg2,
+                createCollection(clientOrg2orderer),
+                createCollection(clientOrg2peerOrg2), // join org2's peer.
+                createCollection(clientOrg2peerOrg1), // just add org1's peer.
                 Collections.EMPTY_LIST, // no event hubs.
                 false); // no need to create channel was done before.
 
         //Install chaincode on org2's peer.
-        installChaincode(clientOrg2, new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})));
+        installChaincode(clientOrg2, createCollection(clientOrg2peerOrg2));
 
         //Now that clientOrg2 org2 peer has joined, channelOrg1 can register events on it.
         // Recreate the channel for org1
@@ -160,9 +161,9 @@ public class MultiDomainSample {
         // clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
         // clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
-        clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
+        clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, createCollection(clientOrg1orderer),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
-                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1, clientOrg1peerOrg2})), //add both peers.
+                createCollection(clientOrg1peerOrg1, clientOrg1peerOrg2), //add both peers.
                 Collections.EMPTY_LIST, // no event hubs.
                 false); //no need to create channel.
 
@@ -651,6 +652,10 @@ public class MultiDomainSample {
         public String getCert() {
             return cert;
         }
+    }
+
+    private static <T> Collection<T> createCollection(T... t) {
+        return new LinkedList<T>(Arrays.asList(t));
     }
 
 }
