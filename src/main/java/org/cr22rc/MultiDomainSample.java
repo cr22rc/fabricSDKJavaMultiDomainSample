@@ -113,16 +113,13 @@ public class MultiDomainSample {
 
         Channel client0FooChannel = constructChannel("foo", client0, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {client0orderer})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})),
-                // new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg2})),
-                Collections.EMPTY_LIST,
+                Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the chain yet.!
+                Collections.EMPTY_LIST, // use no event hubs.
+                true); // first time create the channel.
 
-                //  new LinkedList<>(Arrays.asList(new EventHub[] {client0eventHubOrg1})),
-                Collections.EMPTY_LIST,
-                true);
+        installChaincode(client0, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1}))); //install chaincode on org1's peer.
 
-        installChaincode(client0, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})));
-
-        client0FooChannel.shutdown(true);
+        client0FooChannel.shutdown(true); // done with this for now.  Need to have org2 set up their peer.
 
         // now again as the other org. this would usually be done in another application or instance in that organization
 
@@ -141,39 +138,41 @@ public class MultiDomainSample {
 
         Peer client1peerOrg1 = client1.newPeer("client1_peer0.org1.example.com", "grpc://localhost:7051");
         Peer client1peerOrg2 = client1.newPeer("client1_peer0.org2.example.com", "grpc://localhost:8051");
-        EventHub clien10eventHubOrg2 = client0.newEventHub("client1_peer0.org2.example.com", "grpc://localhost:8053");
+       // EventHub clien10eventHubOrg2 = client0.newEventHub("client1_peer0.org2.example.com", "grpc://localhost:8053");
 
         Channel client1FooChannel = constructChannel("foo", client1, peerAdmin1, new LinkedList<>(Arrays.asList(new Orderer[] {client1orderer})),
-                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})),
-                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})),
-                // new LinkedList<>(Arrays.asList(new EventHub[] {clien10eventHubOrg2})),
-                Collections.EMPTY_LIST,
-                false);
+                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})), // join org2's peer.
+                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})), // just add org1's peer.
+                Collections.EMPTY_LIST, // no event hubs.
+                false); // no need to create channel was done before.
 
+        //Install chaincode on org2's peer.
         installChaincode(client1, new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})));
 
-        //Now that client1 org2 has joined peerOrg2 we can register events on it.
+        //Now that client1 org2 has joined, peerOrg2 we can register events on it.
         // Recreate the channel for org1
 
         client0orderer = client0.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
         client0peerOrg1 = client0.newPeer("client0_peer0.org1.example.com", "grpc://localhost:7051");
         client0peerOrg2 = client0.newPeer("client0_peer0.org2.example.com", "grpc://localhost:8051");
-        client0eventHubOrg1 = client0.newEventHub("client0_peer0.org1.example.com", "grpc://localhost:7053");
-        client0eventHubOrg2 = client0.newEventHub("client0_peer0.org2.example.com", "grpc://localhost:8053");
+       // client0eventHubOrg1 = client0.newEventHub("client0_peer0.org1.example.com", "grpc://localhost:7053");
+       // client0eventHubOrg2 = client0.newEventHub("client0_peer0.org2.example.com", "grpc://localhost:8053");
 
         client0FooChannel = constructChannel("foo", client0, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {client0orderer})),
-                Collections.EMPTY_LIST, // no need to join peers
-                new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1, client0peerOrg2})),
-                //  new LinkedList<>(Arrays.asList(new EventHub[] {client0eventHubOrg1})),
+                Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
+                new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1, client0peerOrg2})), //add both peers.
                 Collections.EMPTY_LIST, // no event hubs.
-                false);
+                false); //no need to create channel.
 
         out("Running client1 for org2 channel");
-        runChannel(client1, client1FooChannel, 0, true, "300");
-        client1FooChannel.shutdown(true);
+        runChannel(client1, client1FooChannel, 0,
+                true, // first time need to instantiate chaincode
+                "300"); // Start value was 200 move 100 expect 300
         out("Running client0 for org1 channel");
         runChannel(client0, client0FooChannel, 0, false, "400");
+        out("Running client1 for org2 channel second time.");
+        runChannel(client1, client1FooChannel, 0, false, "500");
 
     }
 
