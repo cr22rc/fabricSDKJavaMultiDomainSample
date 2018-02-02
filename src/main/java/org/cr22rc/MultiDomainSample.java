@@ -295,7 +295,7 @@ public class MultiDomainSample {
 
     }
 
-    void runChaincodeInChannel(HFClient client, Channel channel, int delta, final boolean instantiate, final String expect) {
+    private void runChaincodeInChannel(HFClient client, Channel channel, int delta, final boolean instantiate, final String expect) {
 
         try {
 
@@ -313,7 +313,7 @@ public class MultiDomainSample {
                     .setVersion(CHAIN_CODE_VERSION)
                     .setPath(CHAIN_CODE_PATH).build();
 
-            final CompletableFuture<Void> instantiateChaincodeCompletableFuture = new CompletableFuture();
+            final CompletableFuture<Void> instantiateChaincodeCompletableFuture = new CompletableFuture<>();
 
             if (!instantiate) {
                 //  completed ok for no instantiate
@@ -377,6 +377,7 @@ public class MultiDomainSample {
 
             instantiateChaincodeCompletableFuture.thenApply(notused -> {
                 try {
+                    // ========== Now do move of 100 units..... ===================
                     successful.clear();
                     failed.clear();
 
@@ -441,11 +442,16 @@ public class MultiDomainSample {
                     assert null != readWriteSetInfo;
                     assert (readWriteSetInfo.getNsRwsetCount() > 0);
 
-                    ChaincodeID cid = resp.getChaincodeID();
 
-                    ////////////////////////////
+
+                    ///////////////////////////////////////////////////////////////////////////////////////////////////
+                    ///////////////////////////////////////////////////////////////////////////////////////////////////
+                    //   uncomment the lines below to create an endorsement failure by removing one of the endorsements
+                    //// successful.remove(successful.iterator().next());
+                    ////
+                    ///////////////////////////////////////////////////////////////////////////////////////////////////
                     // Send Transaction Transaction to orderer
-                    out("Sending chaincode transaction(move a,b,100) to orderer.");
+                    out("Sending chaincode transaction(move a,b,100) to orderer. Number of endorsements %d", successful.size());
                     return channel.sendTransaction(successful).get(TRANSACTION_WAIT_TIME, TimeUnit.SECONDS);
 
                 } catch (Exception e) {
@@ -458,6 +464,7 @@ public class MultiDomainSample {
 
             }).thenApply(transactionEvent -> {
                 try {
+                    // ========== Now do query to see we get what we expect . ===================
 
                     assert (transactionEvent.isValid()); // must be valid to be here.
                     out("Finished transaction with transaction id %s", transactionEvent.getTransactionID());
