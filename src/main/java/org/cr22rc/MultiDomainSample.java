@@ -149,7 +149,7 @@ public class MultiDomainSample {
         //Install chaincode on org2's peer.
         installChaincode(clientOrg2, new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})));
 
-        //Now that clientOrg2 org2 has joined, peerOrg2 we can register events on it.
+        //Now that clientOrg2 org2 peer has joined, peerOrg2 we can register events on it.
         // Recreate the channel for org1
 
         clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
@@ -168,9 +168,12 @@ public class MultiDomainSample {
         out("Running clientOrg2 for org2 channel");
         runChannel(clientOrg2, clientOrg2FooChannel, 0,
                 true, // first time need to instantiate chaincode
-                "300"); // Start value was 200 move 100 expect 300
+                "300"); // Start value was 200. We move 100 expect 300
+
         out("Running clientOrg1 for org1 channel");
         runChannel(clientOrg1, clientOrg1FooChannel, 0, false, "400");
+
+        //one more time for org2
         out("Running clientOrg2 for org2 channel second time.");
         runChannel(clientOrg2, clientOrg2FooChannel, 0, false, "500");
 
@@ -288,7 +291,6 @@ public class MultiDomainSample {
 
     }
 
-    //CHECKSTYLE.OFF: Method length is 320 lines (max allowed is 150).
     void runChannel(HFClient client, Channel channel, int delta, final boolean instantiate, final String expect) {
 
         try {
@@ -316,7 +318,8 @@ public class MultiDomainSample {
                 instantiateProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
                 instantiateProposalRequest.setChaincodeID(chaincodeID);
                 instantiateProposalRequest.setFcn("init");
-                instantiateProposalRequest.setArgs(new String[] {"a", "5500", "b", "" + (200 + delta)});
+                instantiateProposalRequest.setArgs("a", "5000", "b",
+                        "" + (200 + delta)); // start with 200
                 Map<String, byte[]> tm = new HashMap<>();
                 tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
                 tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
@@ -357,7 +360,7 @@ public class MultiDomainSample {
 //                out("Finished instantiate transaction with transaction id %s", transactionEvent.getTransactionID());
                 });
             } else {
-                booleanCompletableFuture = new CompletableFuture();
+                booleanCompletableFuture = new CompletableFuture(); // fake future on instantiate
                 booleanCompletableFuture.complete(true);
             }
 
@@ -373,7 +376,7 @@ public class MultiDomainSample {
                     transactionProposalRequest.setChaincodeID(chaincodeID);
                     transactionProposalRequest.setFcn("invoke");
                     transactionProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
-                    transactionProposalRequest.setArgs(new String[] {"move", "a", "b", "100"});
+                    transactionProposalRequest.setArgs("move", "a", "b", "100");
 
                     Map<String, byte[]> tm2 = new HashMap<>();
                     tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8)); //Just some extra junk in transient map
@@ -458,7 +461,7 @@ public class MultiDomainSample {
                     //  String expect = "" + (300 + delta);
                     out("Now query chaincode for the value of b.");
                     QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
-                    queryByChaincodeRequest.setArgs(new String[] {"query", "b"});
+                    queryByChaincodeRequest.setArgs("query", "b");
                     queryByChaincodeRequest.setFcn("invoke");
                     queryByChaincodeRequest.setChaincodeID(chaincodeID);
 
