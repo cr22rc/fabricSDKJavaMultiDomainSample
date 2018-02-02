@@ -118,7 +118,7 @@ public class MultiDomainSample {
                 Collections.EMPTY_LIST, // use no event hubs.
                 true); // first time create the channel.
 
-        installChaincode(clientOrg1, new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1}))); //install chaincode on org1's peer.
+        installChaincode(clientOrg1, createCollection(clientOrg1peerOrg1)); //install chaincode on org1's peer.
 
         clientOrg1FooChannel.shutdown(true); // done with this for now.  Need to have org2 set up their peer.
 
@@ -394,8 +394,6 @@ public class MultiDomainSample {
                     transactionProposalRequest.setTransientMap(tm2);
 
                     out("sending transactionProposal to all peers with arguments: move(a,b,100)");
-
-                    //            LinkedList<Peer> singlepeers = new LinkedList<>(Arrays.asList(new Peer[] {channel.getPeers().iterator().next()}));
 
                     Collection<ProposalResponse> transactionPropResp = channel.sendTransactionProposal(transactionProposalRequest, channel.getPeers());
                     // Collection<ProposalResponse> transactionPropResp = channel.sendTransactionProposal(transactionProposalRequest, singlepeers);
