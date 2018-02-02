@@ -233,16 +233,18 @@ public class MultiDomainSample {
         }
     }
 
+
+
     private Channel constructChannel(String name, HFClient client, User peerAdmin, Collection<Orderer> orderers,
-                                     Collection<Peer> jp, Collection<Peer> ap, Collection<EventHub> eh, boolean createChannel) throws Exception {
+                                     Collection<Peer> joinPeers,
+                                     Collection<Peer> addPeers,
+                                     Collection<EventHub> eventHubs,
+                                     boolean createChannel) throws Exception {
         ////////////////////////////
         //Construct the channel
         //
 
         out("Constructing channel %s", name);
-
-        //Only peer Admin org
-        client.setUserContext(peerAdmin);
 
         //Just pick the first orderer in the list to create the channel.
 
@@ -264,22 +266,21 @@ public class MultiDomainSample {
         out("Created channel %s", name);
 
         PeerOptions peerOptions = createPeerOptions();
-        if (!eh.isEmpty()) {
-            peerOptions.setPeerRoles(PeerRole.NO_EVENT_SOURCE); //use the event hubs
+        if (!eventHubs.isEmpty()) {
+            peerOptions.setPeerRoles(PeerRole.NO_EVENT_SOURCE); //use the event hub if any and don't use peer eventing service.
         }
 
-        for (Peer peer : jp) {
+        for (Peer peer : joinPeers) {
             newChannel.joinPeer(peer, peerOptions);
 
         }
 
-        for (Peer peer : ap) {
+        for (Peer peer : addPeers) {
 
-            //newChannel.addPeer(peer, Channel.PeerOptions.createPeerOptions().setPeerRoles(Peer.PeerRole.NO_EVENT_SOURCE));
             newChannel.addPeer(peer, peerOptions);
         }
 
-        for (EventHub eventHub : eh) {
+        for (EventHub eventHub : eventHubs) {
             newChannel.addEventHub(eventHub);
         }
 
