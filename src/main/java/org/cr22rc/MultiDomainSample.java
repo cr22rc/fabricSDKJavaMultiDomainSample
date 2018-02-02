@@ -93,86 +93,86 @@ public class MultiDomainSample {
 
     private void run(String[] args) throws Exception {
 
-        HFClient client0 = HFClient.createNewInstance();
+        HFClient clientOrg1 = HFClient.createNewInstance();
 
-        client0.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
+        clientOrg1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser peerAdmin0 = new SampleUser(ORG1MSP, "peerOrg1Admin");
         String certificate = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
 
         PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/6b32e59640c594cf633ad8c64b5958ef7e5ba2a205cfeefd44a9e982ce624d93_sk")));
         peerAdmin0.setEnrollment(new SampleEnrollment(privateKey, certificate));
-        client0.setUserContext(peerAdmin0);
+        clientOrg1.setUserContext(peerAdmin0);
 
-        Orderer client0orderer = client0.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        Orderer clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
-        Peer client0peerOrg1 = client0.newPeer("client0_peer0.org1.example.com", "grpc://localhost:7051");
-        Peer client0peerOrg2 = client0.newPeer("client0_peer0.org2.example.com", "grpc://localhost:8051");
-        EventHub client0eventHubOrg1 = client0.newEventHub("client0_peer0.org1.example.com", "grpc://localhost:7053");
-        EventHub client0eventHubOrg2 = client0.newEventHub("client0_peer0.org2.example.com", "grpc://localhost:8053");
+        Peer clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
+        Peer clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
+        EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
+        EventHub clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
-        Channel client0FooChannel = constructChannel("foo", client0, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {client0orderer})),
-                new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})),
+        Channel clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
+                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1})),
                 Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the chain yet.!
                 Collections.EMPTY_LIST, // use no event hubs.
                 true); // first time create the channel.
 
-        installChaincode(client0, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1}))); //install chaincode on org1's peer.
+        installChaincode(clientOrg1, new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1}))); //install chaincode on org1's peer.
 
-        client0FooChannel.shutdown(true); // done with this for now.  Need to have org2 set up their peer.
+        clientOrg1FooChannel.shutdown(true); // done with this for now.  Need to have org2 set up their peer.
 
         // now again as the other org. this would usually be done in another application or instance in that organization
 
-        HFClient client1 = HFClient.createNewInstance();
+        HFClient clientOrg2 = HFClient.createNewInstance();
 
-        client1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
+        clientOrg2.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser peerAdmin1 = new SampleUser(ORG2MSP, "peerOrg2Admin");
         String certificate1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
 
         PrivateKey privateKey1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/b2e2536de633960859d965f02b296083d1e8aa1e868016417c4e4fb760270b96_sk")));
         peerAdmin1.setEnrollment(new SampleEnrollment(privateKey1, certificate1));
-        client1.setUserContext(peerAdmin1);
+        clientOrg2.setUserContext(peerAdmin1);
 
-        Orderer client1orderer = client1.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        Orderer clientOrg2orderer = clientOrg2.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
-        Peer client1peerOrg1 = client1.newPeer("client1_peer0.org1.example.com", "grpc://localhost:7051");
-        Peer client1peerOrg2 = client1.newPeer("client1_peer0.org2.example.com", "grpc://localhost:8051");
-       // EventHub clien10eventHubOrg2 = client0.newEventHub("client1_peer0.org2.example.com", "grpc://localhost:8053");
+        Peer clientOrg2peerOrg1 = clientOrg2.newPeer("clientOrg2_peer0.org1.example.com", "grpc://localhost:7051");
+        Peer clientOrg2peerOrg2 = clientOrg2.newPeer("clientOrg2_peer0.org2.example.com", "grpc://localhost:8051");
+       // EventHub clien10eventHubOrg2 = clientOrg1.newEventHub("clientOrg2_peer0.org2.example.com", "grpc://localhost:8053");
 
-        Channel client1FooChannel = constructChannel("foo", client1, peerAdmin1, new LinkedList<>(Arrays.asList(new Orderer[] {client1orderer})),
-                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})), // join org2's peer.
-                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})), // just add org1's peer.
+        Channel clientOrg2FooChannel = constructChannel("foo", clientOrg2, peerAdmin1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg2orderer})),
+                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})), // join org2's peer.
+                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg1})), // just add org1's peer.
                 Collections.EMPTY_LIST, // no event hubs.
                 false); // no need to create channel was done before.
 
         //Install chaincode on org2's peer.
-        installChaincode(client1, new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})));
+        installChaincode(clientOrg2, new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})));
 
-        //Now that client1 org2 has joined, peerOrg2 we can register events on it.
+        //Now that clientOrg2 org2 has joined, peerOrg2 we can register events on it.
         // Recreate the channel for org1
 
-        client0orderer = client0.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
-        client0peerOrg1 = client0.newPeer("client0_peer0.org1.example.com", "grpc://localhost:7051");
-        client0peerOrg2 = client0.newPeer("client0_peer0.org2.example.com", "grpc://localhost:8051");
-       // client0eventHubOrg1 = client0.newEventHub("client0_peer0.org1.example.com", "grpc://localhost:7053");
-       // client0eventHubOrg2 = client0.newEventHub("client0_peer0.org2.example.com", "grpc://localhost:8053");
+        clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
+        clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
+       // clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
+       // clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
-        client0FooChannel = constructChannel("foo", client0, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {client0orderer})),
+        clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
-                new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1, client0peerOrg2})), //add both peers.
+                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1, clientOrg1peerOrg2})), //add both peers.
                 Collections.EMPTY_LIST, // no event hubs.
                 false); //no need to create channel.
 
-        out("Running client1 for org2 channel");
-        runChannel(client1, client1FooChannel, 0,
+        out("Running clientOrg2 for org2 channel");
+        runChannel(clientOrg2, clientOrg2FooChannel, 0,
                 true, // first time need to instantiate chaincode
                 "300"); // Start value was 200 move 100 expect 300
-        out("Running client0 for org1 channel");
-        runChannel(client0, client0FooChannel, 0, false, "400");
-        out("Running client1 for org2 channel second time.");
-        runChannel(client1, client1FooChannel, 0, false, "500");
+        out("Running clientOrg1 for org1 channel");
+        runChannel(clientOrg1, clientOrg1FooChannel, 0, false, "400");
+        out("Running clientOrg2 for org2 channel second time.");
+        runChannel(clientOrg2, clientOrg2FooChannel, 0, false, "500");
 
     }
 
