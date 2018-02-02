@@ -334,8 +334,12 @@ public class MultiDomainSample {
                 instantiateProposalRequest.setTransientMap(tm);
 
                 ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
-                //chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicy.yaml"));
                 chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicyAllMembers.yaml"));
+
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                //// If you comment out this line only one endorsement is needed. And if you comment out then line in
+                ////  down below in the move that removes an endorsement it will work again.
                 instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
                 out("Sending instantiateProposalRequest to all peers with arguments: a and b set to 100 and %s respectively", "" + (200 + delta));
@@ -446,9 +450,11 @@ public class MultiDomainSample {
 
                     ///////////////////////////////////////////////////////////////////////////////////////////////////
                     ///////////////////////////////////////////////////////////////////////////////////////////////////
-                    //   uncomment the lines below to create an endorsement failure by removing one of the endorsements
-                    //// successful.remove(successful.iterator().next());
-                    ////
+                    //   uncomment the line below to create an endorsement failure by removing one of the endorsements
+                    //   assuming you have not commented out the line above that set endorsements needing two.
+                    //
+                    //   successful.remove(successful.iterator().next());
+                    //
                     ///////////////////////////////////////////////////////////////////////////////////////////////////
                     // Send Transaction Transaction to orderer
                     out("Sending chaincode transaction(move a,b,100) to orderer. Number of endorsements %d", successful.size());
