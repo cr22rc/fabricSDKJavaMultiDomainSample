@@ -98,22 +98,22 @@ public class MultiDomainSample {
         clientOrg1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser peerAdminOrg1 = new SampleUser(ORG1MSP, "peerOrg1Admin");
-        String certificate = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
+        String certificateAdminOrg1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
 
-        PrivateKey privateKey = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/6b32e59640c594cf633ad8c64b5958ef7e5ba2a205cfeefd44a9e982ce624d93_sk")));
-        peerAdminOrg1.setEnrollment(new SampleEnrollment(privateKey, certificate));
+        PrivateKey privateKeyAdminOrg1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/6b32e59640c594cf633ad8c64b5958ef7e5ba2a205cfeefd44a9e982ce624d93_sk")));
+        peerAdminOrg1.setEnrollment(new SampleEnrollment(privateKeyAdminOrg1, certificateAdminOrg1));
         clientOrg1.setUserContext(peerAdminOrg1);
 
         Orderer clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
         Peer clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
         Peer clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
-        EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
-        EventHub clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
+        // EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
+        // EventHub clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
         Channel clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, new LinkedList<>(Arrays.asList(new Orderer[] {clientOrg1orderer})),
-                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1})),
-                Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the chain yet.!
+                new LinkedList<>(Arrays.asList(new Peer[] {clientOrg1peerOrg1})), // join peer org1's peer to the channel.
+                Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the channel yet.!
                 Collections.EMPTY_LIST, // use no event hubs.
                 true); // first time create the channel.
 
@@ -128,10 +128,10 @@ public class MultiDomainSample {
         clientOrg2.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser peerAdminOrg2 = new SampleUser(ORG2MSP, "peerOrg2Admin");
-        String certificate1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
+        String certificatePeerAdminOrg2 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
 
-        PrivateKey privateKey1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/b2e2536de633960859d965f02b296083d1e8aa1e868016417c4e4fb760270b96_sk")));
-        peerAdminOrg2.setEnrollment(new SampleEnrollment(privateKey1, certificate1));
+        PrivateKey privateKeyAdminOrg2 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/b2e2536de633960859d965f02b296083d1e8aa1e868016417c4e4fb760270b96_sk")));
+        peerAdminOrg2.setEnrollment(new SampleEnrollment(privateKeyAdminOrg2, certificatePeerAdminOrg2));
         clientOrg2.setUserContext(peerAdminOrg2);
 
         Orderer clientOrg2orderer = clientOrg2.newOrderer("orderer.example.com", "grpc://localhost:7050");
@@ -149,7 +149,7 @@ public class MultiDomainSample {
         //Install chaincode on org2's peer.
         installChaincode(clientOrg2, new LinkedList<>(Arrays.asList(new Peer[] {clientOrg2peerOrg2})));
 
-        //Now that clientOrg2 org2 peer has joined, peerOrg2 we can register events on it.
+        //Now that clientOrg2 org2 peer has joined, channelOrg1 can register events on it.
         // Recreate the channel for org1
 
         clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
