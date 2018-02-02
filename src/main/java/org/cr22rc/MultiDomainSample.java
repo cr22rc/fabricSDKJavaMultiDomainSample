@@ -169,14 +169,18 @@ public class MultiDomainSample {
         out("Running clientOrg2 for org2 channel");
         runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0,
                 true, // first time need to instantiate chaincode
-                "300"); // Start value was 200. We move 100 expect 300
+                "300"); // Start value was 200. We move 100 expect 300 in b
 
         out("Running clientOrg1 for org1 channel");
-        runChaincodeInChannel(clientOrg1, clientOrg1FooChannel, 0, false, "400");
+        runChaincodeInChannel(clientOrg1, clientOrg1FooChannel, 0,
+                false, // No need to instantiate chaincode again.
+                "400"); // 300 move 100 expect 400 in b
 
         //one more time for org2
         out("Running clientOrg2 for org2 channel second time.");
-        runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0, false, "500");
+        runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0,
+                false, // No need to instantiate chaincode again.
+                "500"); // 400 move 100 expect 500 in b
 
     }
 
