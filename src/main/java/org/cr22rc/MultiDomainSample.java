@@ -24,13 +24,13 @@ import java.security.PrivateKey;
 import java.security.Security;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
@@ -42,16 +42,18 @@ import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.BlockInfo;
 import org.hyperledger.fabric.sdk.BlockchainInfo;
 import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
-import org.hyperledger.fabric.sdk.ChaincodeEvent;
 import org.hyperledger.fabric.sdk.ChaincodeID;
 import org.hyperledger.fabric.sdk.Channel;
+import org.hyperledger.fabric.sdk.Channel.PeerOptions;
 import org.hyperledger.fabric.sdk.ChannelConfiguration;
 import org.hyperledger.fabric.sdk.Enrollment;
+import org.hyperledger.fabric.sdk.EventHub;
 import org.hyperledger.fabric.sdk.HFClient;
 import org.hyperledger.fabric.sdk.InstallProposalRequest;
 import org.hyperledger.fabric.sdk.InstantiateProposalRequest;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
+import org.hyperledger.fabric.sdk.Peer.PeerRole;
 import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
 import org.hyperledger.fabric.sdk.SDKUtils;
@@ -60,10 +62,12 @@ import org.hyperledger.fabric.sdk.TransactionProposalRequest;
 import org.hyperledger.fabric.sdk.TxReadWriteSetInfo;
 import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric.sdk.exception.TransactionEventException;
+import org.hyperledger.fabric.sdk.exception.TransactionException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hyperledger.fabric.sdk.Channel.PeerOptions.createPeerOptions;
 
 public class MultiDomainSample {
 
@@ -102,14 +106,23 @@ public class MultiDomainSample {
 
         Orderer client0orderer = client0.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
-        Peer client0peerOrg1 = client0.newPeer("peer0.org1.example.com", "grpc://localhost:7051");
-        Peer client0peerOrg2 = client0.newPeer("peer0.org2.example.com", "grpc://localhost:8051");
+        Peer client0peerOrg1 = client0.newPeer("client0_peer0.org1.example.com", "grpc://localhost:7051");
+        Peer client0peerOrg2 = client0.newPeer("client0_peer0.org2.example.com", "grpc://localhost:8051");
+        EventHub client0eventHubOrg1 = client0.newEventHub("client0_peer0.org1.example.com", "grpc://localhost:7053");
+        EventHub client0eventHubOrg2 = client0.newEventHub("client0_peer0.org2.example.com", "grpc://localhost:8053");
 
         Channel client0FooChannel = constructChannel("foo", client0, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {client0orderer})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})),
-                new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg2})), true);
+                // new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg2})),
+                Collections.EMPTY_LIST,
+
+                //  new LinkedList<>(Arrays.asList(new EventHub[] {client0eventHubOrg1})),
+                Collections.EMPTY_LIST,
+                true);
 
         installChaincode(client0, new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1})));
+
+        client0FooChannel.shutdown(true);
 
         // now again as the other org. this would usually be done in another application or instance in that organization
 
@@ -126,17 +139,41 @@ public class MultiDomainSample {
 
         Orderer client1orderer = client1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
-        Peer client1peerOrg1 = client1.newPeer("peer0.org1.example.com", "grpc://localhost:7051");
-        Peer client1peerOrg2 = client1.newPeer("peer0.org2.example.com", "grpc://localhost:8051");
+        Peer client1peerOrg1 = client1.newPeer("client1_peer0.org1.example.com", "grpc://localhost:7051");
+        Peer client1peerOrg2 = client1.newPeer("client1_peer0.org2.example.com", "grpc://localhost:8051");
+        EventHub clien10eventHubOrg2 = client0.newEventHub("client1_peer0.org2.example.com", "grpc://localhost:8053");
 
         Channel client1FooChannel = constructChannel("foo", client1, peerAdmin1, new LinkedList<>(Arrays.asList(new Orderer[] {client1orderer})),
                 new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})),
-                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})), false);
+                new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg1})),
+                // new LinkedList<>(Arrays.asList(new EventHub[] {clien10eventHubOrg2})),
+                Collections.EMPTY_LIST,
+                false);
 
         installChaincode(client1, new LinkedList<>(Arrays.asList(new Peer[] {client1peerOrg2})));
 
-        runChannel(client1, client1FooChannel, 0, true);
-     //   runChannel(client0, client0FooChannel, 0);
+        //Now that client1 org2 has joined peerOrg2 we can register events on it.
+        // Recreate the channel for org1
+
+        client0orderer = client0.newOrderer("orderer.example.com", "grpc://localhost:7050");
+
+        client0peerOrg1 = client0.newPeer("client0_peer0.org1.example.com", "grpc://localhost:7051");
+        client0peerOrg2 = client0.newPeer("client0_peer0.org2.example.com", "grpc://localhost:8051");
+        client0eventHubOrg1 = client0.newEventHub("client0_peer0.org1.example.com", "grpc://localhost:7053");
+        client0eventHubOrg2 = client0.newEventHub("client0_peer0.org2.example.com", "grpc://localhost:8053");
+
+        client0FooChannel = constructChannel("foo", client0, peerAdmin0, new LinkedList<>(Arrays.asList(new Orderer[] {client0orderer})),
+                Collections.EMPTY_LIST, // no need to join peers
+                new LinkedList<>(Arrays.asList(new Peer[] {client0peerOrg1, client0peerOrg2})),
+                //  new LinkedList<>(Arrays.asList(new EventHub[] {client0eventHubOrg1})),
+                Collections.EMPTY_LIST, // no event hubs.
+                false);
+
+        out("Running client1 for org2 channel");
+        runChannel(client1, client1FooChannel, 0, true, "300");
+        client1FooChannel.shutdown(true);
+        out("Running client0 for org1 channel");
+        runChannel(client0, client0FooChannel, 0, false, "400");
 
     }
 
@@ -195,7 +232,7 @@ public class MultiDomainSample {
     }
 
     private Channel constructChannel(String name, HFClient client, User peerAdmin, Collection<Orderer> orderers,
-                                     Collection<Peer> jp, Collection<Peer> ap, boolean createChannel) throws Exception {
+                                     Collection<Peer> jp, Collection<Peer> ap, Collection<EventHub> eh, boolean createChannel) throws Exception {
         ////////////////////////////
         //Construct the channel
         //
@@ -210,14 +247,12 @@ public class MultiDomainSample {
         Orderer anOrderer = orderers.iterator().next();
         orderers.remove(anOrderer);
 
-        ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/foo.tx"));
-
         //Create channel that has only one signer that is this orgs peer admin. If channel creation policy needed more signature they would need to be added too.
         Channel newChannel = null;
         if (createChannel) {
+            ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/foo.tx"));
             newChannel = client.newChannel(name, anOrderer, channelConfiguration, client.getChannelConfigurationSignature(channelConfiguration, peerAdmin));
         } else {
-
             newChannel = client.newChannel(name);
             newChannel.addOrderer(anOrderer);
         }
@@ -226,16 +261,24 @@ public class MultiDomainSample {
 
         out("Created channel %s", name);
 
-        for (Peer peer : jp) {
+        PeerOptions peerOptions = createPeerOptions();
+        if (!eh.isEmpty()) {
+            peerOptions.setPeerRoles(PeerRole.NO_EVENT_SOURCE); //use the event hubs
+        }
 
-            newChannel.joinPeer(peer);
+        for (Peer peer : jp) {
+            newChannel.joinPeer(peer, peerOptions);
 
         }
 
         for (Peer peer : ap) {
 
-            newChannel.addPeer(peer);
+            //newChannel.addPeer(peer, Channel.PeerOptions.createPeerOptions().setPeerRoles(Peer.PeerRole.NO_EVENT_SOURCE));
+            newChannel.addPeer(peer, peerOptions);
+        }
 
+        for (EventHub eventHub : eh) {
+            newChannel.addEventHub(eventHub);
         }
 
         newChannel.initialize();
@@ -247,20 +290,7 @@ public class MultiDomainSample {
     }
 
     //CHECKSTYLE.OFF: Method length is 320 lines (max allowed is 150).
-    void runChannel(HFClient client, Channel channel, int delta, boolean instatiate) {
-
-        class ChaincodeEventCapture { //A test class to capture chaincode events
-            final String handle;
-            final BlockEvent blockEvent;
-            final ChaincodeEvent chaincodeEvent;
-
-            ChaincodeEventCapture(String handle, BlockEvent blockEvent, ChaincodeEvent chaincodeEvent) {
-                this.handle = handle;
-                this.blockEvent = blockEvent;
-                this.chaincodeEvent = chaincodeEvent;
-            }
-        }
-        Vector<ChaincodeEventCapture> chaincodeEvents = new Vector<>(); // Test list to capture chaincode events.
+    void runChannel(HFClient client, Channel channel, int delta, final boolean instantiate, final String expect) {
 
         try {
 
@@ -274,77 +304,66 @@ public class MultiDomainSample {
             Collection<ProposalResponse> successful = new LinkedList<>();
             Collection<ProposalResponse> failed = new LinkedList<>();
 
-            // Register a chaincode event listener that will trigger for any chaincode id and only for EXPECTED_EVENT_NAME event.
-
-            String chaincodeEventListenerHandle = channel.registerChaincodeEventListener(Pattern.compile(".*"),
-                    Pattern.compile(Pattern.quote(EXPECTED_EVENT_NAME)),
-                    (handle, blockEvent, chaincodeEvent) -> {
-
-                        chaincodeEvents.add(new ChaincodeEventCapture(handle, blockEvent, chaincodeEvent));
-
-                        out("RECEIVED Chaincode event with handle: %s, chhaincode Id: %s, chaincode event name: %s, "
-                                        + "transaction id: %s, event payload: \"%s\", from eventhub: %s",
-                                handle, chaincodeEvent.getChaincodeId(),
-                                chaincodeEvent.getEventName(), chaincodeEvent.getTxId(),
-                                new String(chaincodeEvent.getPayload()), blockEvent.getPeer().toString());
-
-                    });
-
             chaincodeID = ChaincodeID.newBuilder().setName(CHAIN_CODE_NAME)
                     .setVersion(CHAIN_CODE_VERSION)
                     .setPath(CHAIN_CODE_PATH).build();
 
-            ////////////////////////////
-            // Install Proposal Request
-            //
+            CompletableFuture<Boolean> booleanCompletableFuture;
+            if (instantiate) {
 
-            out("Creating install proposal");
+                ///////////////
+                //// Instantiate chaincode.
+                InstantiateProposalRequest instantiateProposalRequest = client.newInstantiationProposalRequest();
+                instantiateProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
+                instantiateProposalRequest.setChaincodeID(chaincodeID);
+                instantiateProposalRequest.setFcn("init");
+                instantiateProposalRequest.setArgs(new String[] {"a", "5500", "b", "" + (200 + delta)});
+                Map<String, byte[]> tm = new HashMap<>();
+                tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
+                tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
+                instantiateProposalRequest.setTransientMap(tm);
 
-            ///////////////
-            //// Instantiate chaincode.
-            InstantiateProposalRequest instantiateProposalRequest = client.newInstantiationProposalRequest();
-            instantiateProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
-            instantiateProposalRequest.setChaincodeID(chaincodeID);
-            instantiateProposalRequest.setFcn("init");
-            instantiateProposalRequest.setArgs(new String[] {"a", "5500", "b", "" + (200 + delta)});
-            Map<String, byte[]> tm = new HashMap<>();
-            tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
-            tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
-            instantiateProposalRequest.setTransientMap(tm);
+                ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
+                //chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicy.yaml"));
+                chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicyAllMembers.yaml"));
+                instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
-            ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
-            //chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicy.yaml"));
-            chaincodeEndorsementPolicy.fromYamlFile(new File("src/test/fixture/sdkintegration/chaincodeendorsementpolicyAllMembers.yaml"));
-            instantiateProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
+                out("Sending instantiateProposalRequest to all peers with arguments: a and b set to 100 and %s respectively", "" + (200 + delta));
+                successful.clear();
+                failed.clear();
 
-            out("Sending instantiateProposalRequest to all peers with arguments: a and b set to 100 and %s respectively", "" + (200 + delta));
-            successful.clear();
-            failed.clear();
+                responses = channel.sendInstantiationProposal(instantiateProposalRequest);
 
-            responses = channel.sendInstantiationProposal(instantiateProposalRequest);
-
-            for (ProposalResponse response : responses) {
-                if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
-                    successful.add(response);
-                    out("Succesful instantiate proposal response Txid: %s from peer %s", response.getTransactionID(), response.getPeer().getName());
-                } else {
-                    failed.add(response);
+                for (ProposalResponse response : responses) {
+                    if (response.isVerified() && response.getStatus() == ProposalResponse.Status.SUCCESS) {
+                        successful.add(response);
+                        out("Succesful instantiate proposal response Txid: %s from peer %s", response.getTransactionID(), response.getPeer().getName());
+                    } else {
+                        failed.add(response);
+                    }
                 }
+                out("Received %d instantiate proposal responses. Successful+verified: %d . Failed: %d", responses.size(), successful.size(), failed.size());
+                if (failed.size() > 0) {
+                    ProposalResponse first = failed.iterator().next();
+                    fail("Not enough endorsers for instantiate :" + successful.size() + "endorser failed with " + first.getMessage() + ". Was verified:" + first.isVerified());
+                }
+
+                ///////////////
+                /// Send instantiate transaction to orderer
+                out("Sending instantiateTransaction to orderer with a and b set to 100 and %s respectively", "" + (200 + delta));
+                booleanCompletableFuture = channel.sendTransaction(successful, orderers).thenApply(transactionEvent -> {
+                    // assert (transactionEvent.isValid()); // must be valid to be here.
+
+                    return transactionEvent.isValid() ? new CompletableFuture().complete(true) : new CompletableFuture().completeExceptionally(new TransactionException(""));
+//                out("Finished instantiate transaction with transaction id %s", transactionEvent.getTransactionID());
+                });
+            } else {
+                booleanCompletableFuture = new CompletableFuture();
+                booleanCompletableFuture.complete(true);
             }
-            out("Received %d instantiate proposal responses. Successful+verified: %d . Failed: %d", responses.size(), successful.size(), failed.size());
-            if (failed.size() > 0) {
-                ProposalResponse first = failed.iterator().next();
-                fail("Not enough endorsers for instantiate :" + successful.size() + "endorser failed with " + first.getMessage() + ". Was verified:" + first.isVerified());
-            }
 
-            ///////////////
-            /// Send instantiate transaction to orderer
-            out("Sending instantiateTransaction to orderer with a and b set to 100 and %s respectively", "" + (200 + delta));
-            channel.sendTransaction(successful, orderers).thenApply(transactionEvent -> {
-
-                assert (transactionEvent.isValid()); // must be valid to be here.
-                out("Finished instantiate transaction with transaction id %s", transactionEvent.getTransactionID());
-
+            //  CompletableFuture<BlockEvent.TransactionEvent> transactionEventCompletableFuture = channel.sendTransaction(successful, orderers).thenApply()
+            booleanCompletableFuture.thenApply(notused -> {
                 try {
                     successful.clear();
                     failed.clear();
@@ -422,7 +441,7 @@ public class MultiDomainSample {
                 } catch (Exception e) {
                     out("Caught an exception while invoking chaincode");
                     e.printStackTrace();
-                    fail("Failed invoking chaincode with error : " + e.getMessage());
+                    fail("Failed invoking chaincode with error : " + e.getMessage(), e);
                 }
 
                 return null;
@@ -437,7 +456,7 @@ public class MultiDomainSample {
                     ////////////////////////////
                     // Send Query Proposal to all peers
                     //
-                    String expect = "" + (300 + delta);
+                    //  String expect = "" + (300 + delta);
                     out("Now query chaincode for the value of b.");
                     QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
                     queryByChaincodeRequest.setArgs(new String[] {"query", "b"});
@@ -458,7 +477,7 @@ public class MultiDomainSample {
                         } else {
                             String payload = proposalResponse.getProposalResponse().getResponse().getPayload().toStringUtf8();
                             out("Query payload of b from peer %s returned %s", proposalResponse.getPeer().getName(), payload);
-                            assert expect.equals(payload);
+                            assert expect.equals(payload) : String.format("Expected %s but got %s", expect, payload);
                         }
                     }
 
@@ -466,7 +485,7 @@ public class MultiDomainSample {
                 } catch (Exception e) {
                     out("Caught exception while running query");
                     e.printStackTrace();
-                    fail("Failed during chaincode query with error : " + e.getMessage());
+                    fail("Failed during chaincode query with error : " + e.getMessage(), e);
                 }
 
                 return null;
@@ -474,10 +493,10 @@ public class MultiDomainSample {
                 if (e instanceof TransactionEventException) {
                     BlockEvent.TransactionEvent te = ((TransactionEventException) e).getTransactionEvent();
                     if (te != null) {
-                        fail(format("Transaction with txid %s failed. %s", te.getTransactionID(), e.getMessage()));
+                        fail(format("Transaction with txid %s failed. %s", te.getTransactionID(), e.getMessage()), e);
                     }
                 }
-                fail(format("Test failed with %s exception %s", e.getClass().getName(), e.getMessage()));
+                fail(format("Test failed with %s exception %s", e.getClass().getName(), e.getMessage()), e);
 
                 return null;
             }).get(TRANSACTION_WAIT_TIME, TimeUnit.SECONDS);
@@ -522,40 +541,17 @@ public class MultiDomainSample {
             out("QueryTransactionByID returned TransactionInfo: txID " + txInfo.getTransactionID()
                     + "\n     validation code " + txInfo.getValidationCode().getNumber());
 
-            if (chaincodeEventListenerHandle != null) {
-
-                channel.unregisterChaincodeEventListener(chaincodeEventListenerHandle);
-                //Should be two. One event in chaincode and two notification for each of the two event hubs
-
-                final int numberEventHubs = channel.getEventHubs().size();
-                //just make sure we get the notifications.
-                for (int i = 15; i > 0; --i) {
-                    if (chaincodeEvents.size() == numberEventHubs) {
-                        break;
-                    } else {
-                        Thread.sleep(90); // wait for the events.
-                    }
-
-                }
-
-                for (ChaincodeEventCapture chaincodeEventCapture : chaincodeEvents) {
-
-                    BlockEvent blockEvent = chaincodeEventCapture.blockEvent;
-                    assert blockEvent != null : "chaincodeEventCapture.blockEvent is null!";
-                    assert channelName.equals(blockEvent.getChannelId()) : format("Expected channel name %s, but got %s", channelName, blockEvent.getChannelId());
-                    assert channel.getPeers().contains(blockEvent.getPeer()) : "Peer is not part of channel!";
-
-                }
-
-            }
-
             out("Running for Channel %s done", channelName);
 
         } catch (Exception e) {
             out("Caught an exception running channel %s", channel.getName());
             e.printStackTrace();
-            fail("Test failed with error : " + e.getMessage());
+            fail("Test failed with error : " + e.getMessage(), e);
         }
+    }
+
+    private void fail(String s, Throwable t) {
+        throw new RuntimeException(s, t);
     }
 
     private void fail(String s) {
