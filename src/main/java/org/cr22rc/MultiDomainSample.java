@@ -107,7 +107,6 @@ public class MultiDomainSample {
         Orderer clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
         Peer clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
-        Peer clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
         // EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
         // EventHub clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
@@ -157,27 +156,27 @@ public class MultiDomainSample {
         clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
         clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
-        clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
+        Peer clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
         // clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_peer0.org1.example.com", "grpc://localhost:7053");
         // clientOrg1eventHubOrg2 = clientOrg1.newEventHub("clientOrg1_peer0.org2.example.com", "grpc://localhost:8053");
 
         clientOrg1FooChannel = constructChannel("foo", clientOrg1, peerAdminOrg1, createCollection(clientOrg1orderer),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
-                createCollection(clientOrg1peerOrg1, clientOrg1peerOrg2), //add both peers.
+                createCollection(clientOrg1peerOrg1, clientOrg1peerOrg2), //add both peers to channel
                 Collections.EMPTY_LIST, // no event hubs.
                 false); //no need to create channel.
 
         out("Running clientOrg2 for org2 channel");
-        runChannel(clientOrg2, clientOrg2FooChannel, 0,
+        runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0,
                 true, // first time need to instantiate chaincode
                 "300"); // Start value was 200. We move 100 expect 300
 
         out("Running clientOrg1 for org1 channel");
-        runChannel(clientOrg1, clientOrg1FooChannel, 0, false, "400");
+        runChaincodeInChannel(clientOrg1, clientOrg1FooChannel, 0, false, "400");
 
         //one more time for org2
         out("Running clientOrg2 for org2 channel second time.");
-        runChannel(clientOrg2, clientOrg2FooChannel, 0, false, "500");
+        runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0, false, "500");
 
     }
 
@@ -292,7 +291,7 @@ public class MultiDomainSample {
 
     }
 
-    void runChannel(HFClient client, Channel channel, int delta, final boolean instantiate, final String expect) {
+    void runChaincodeInChannel(HFClient client, Channel channel, int delta, final boolean instantiate, final String expect) {
 
         try {
 
