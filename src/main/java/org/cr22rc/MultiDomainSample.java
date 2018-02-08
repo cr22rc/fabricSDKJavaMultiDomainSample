@@ -83,7 +83,7 @@ public class MultiDomainSample {
     private static final String CHANNEL_NAME = "foo";
     private String testTxID;
 
-    private static final boolean doV1_0 = false;
+    private static final boolean doV1_0 = false; // true forces use of event hubs.
 
     //
     private static final String ORG1MSP = "Org1MSP";
@@ -97,6 +97,8 @@ public class MultiDomainSample {
     }
 
     private void run(String[] args) throws Exception {
+
+        out("\nRunning as org1");
 
         HFClient clientOrg1 = HFClient.createNewInstance();
 
@@ -117,6 +119,7 @@ public class MultiDomainSample {
             EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_eventhub0.org1.example.com", "grpc://localhost:7053");
             eventhubs = createCollection(clientOrg1eventHubOrg1);
         }
+        out("Running as org1 constructed channel and creating actual channel.");
         Channel clientOrg1FooChannel = constructChannel(CHANNEL_NAME, clientOrg1, peerAdminOrg1,
                 createCollection(clientOrg1orderer),
                 createCollection(clientOrg1peerOrg1), // join peer org1's peer to the channel.
@@ -130,6 +133,8 @@ public class MultiDomainSample {
         clientOrg1FooChannel.shutdown(true); // done with this for now.  Need to have org2 set up their peer.
 
         // now again as the other org. this would usually be done in another application or instance in that organization
+
+        out("\nRunning as org2");
 
         HFClient clientOrg2 = HFClient.createNewInstance();
 
@@ -151,7 +156,7 @@ public class MultiDomainSample {
             EventHub clientOrg2eventHubOrg2 = clientOrg2.newEventHub("clientOrg2_eventhub0.org2.example.com", "grpc://localhost:8053");
             eventhubs = createCollection(clientOrg2eventHubOrg2);
         }
-
+        out("Running as org2 constructing channel.");
         Channel clientOrg2FooChannel = constructChannel(CHANNEL_NAME, clientOrg2, peerAdminOrg2,
                 createCollection(clientOrg2orderer),
                 createCollection(clientOrg2peerOrg2), // join org2's peer.
@@ -165,6 +170,8 @@ public class MultiDomainSample {
 
         //Now that clientOrg2 org2 peer has joined, channelOrg1 can register to receive events on it.
         // Recreate the channel for org1
+
+        out("\nRunning as org1 - recreating channel with both peers now.");
 
         clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
 
@@ -183,18 +190,18 @@ public class MultiDomainSample {
                 eventhubs, // event hubs.
                 false); //no need to create channel.
 
-        out("Running clientOrg2 for org2 channel");
+        out("\nRunning chaincode clientOrg2 for org2 channel");
         runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0,
                 true, // first time need to instantiate chaincode
                 "300"); // Start value was 200. We move 100 expect 300 in b
 
-        out("Running clientOrg1 for org1 channel");
+        out("\nRunning chaincode clientOrg1 for org1 channel");
         runChaincodeInChannel(clientOrg1, clientOrg1FooChannel, 0,
                 false, // No need to instantiate chaincode again.
                 "400"); // 300 move 100 expect 400 in b
 
         //one more time for org2
-        out("Running clientOrg2 for org2 channel second time.");
+        out("\nRunning chaincode clientOrg2 for org2 channel second time.");
         runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0,
                 false, // No need to instantiate chaincode again.
                 "500"); // 400 move 100 expect 500 in b
@@ -219,6 +226,7 @@ public class MultiDomainSample {
 
         // The user would usually be told the enrollment secret out of bounds by the registrar
         //   The user would most likely now run in some other application or instance.
+        out("\nRunning as user in org1.");
 
         SampleUser user = new SampleUser(ORG1MSP, userName); // now this is the user.
         user.setEnrollment(hfcaClient.enroll(user.getName(), enrollmentSecret)); // now the user enrolls
@@ -245,7 +253,7 @@ public class MultiDomainSample {
                 eventhubs, // event hubs.
                 false); //no need to create channel.
 
-        out("Running clientOrg1user for org1 channel as user");
+        out("Running chaincode clientOrg1user for org1 as regular user");
         runChaincodeInChannel(clientOrg1user, clientOrg1userFooChannel, 0,
                 false, // No need to instantiate chaincode again.
                 "600");// 500 move 100 expect 600 in b
