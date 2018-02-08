@@ -79,7 +79,6 @@ public class MultiDomainSampleV10 {
     private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
     private String testTxID;
 
-    //final boolean doV1_0 = true;
     final boolean doV1_0 = true;
 
     //
@@ -335,10 +334,6 @@ public class MultiDomainSampleV10 {
 
         out("Created channel %s", name);
 
-//        PeerOptions peerOptions = createPeerOptions();
-//        if (!eventHubs.isEmpty()) {
-//            peerOptions.setPeerRoles(PeerRole.NO_EVENT_SOURCE.clone()); //use the event hub if any and don't use peer eventing service.
-//        }
 
         for (Peer peer : joinPeers) {
             newChannel.joinPeer(peer);
@@ -718,13 +713,6 @@ public class MultiDomainSampleV10 {
             return mspId;
         }
 
-        public void setEnrollmentSecret(String enrollmentSecret) {
-            this.enrollmentSecret = enrollmentSecret;
-        }
-
-        public String getEnrollmentSecret() {
-            return enrollmentSecret;
-        }
     }
 
     private static class SampleEnrollment implements Enrollment {

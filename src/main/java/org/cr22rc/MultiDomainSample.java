@@ -721,13 +721,6 @@ public class MultiDomainSample {
             return mspId;
         }
 
-        public void setEnrollmentSecret(String enrollmentSecret) {
-            this.enrollmentSecret = enrollmentSecret;
-        }
-
-        public String getEnrollmentSecret() {
-            return enrollmentSecret;
-        }
     }
 
     private static class SampleEnrollment implements Enrollment {
