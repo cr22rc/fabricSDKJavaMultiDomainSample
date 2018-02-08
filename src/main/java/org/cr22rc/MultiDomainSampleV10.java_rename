@@ -211,7 +211,7 @@ public class MultiDomainSampleV10 {
         final String userName = "user";
 
         RegistrationRequest rr = new RegistrationRequest(userName, "org1.department1");
-        String enrollmentSecret = hfcaClient.register(rr, registrar); // this registers the user and gives enrollment secret.
+        final String enrollmentSecret = hfcaClient.register(rr, registrar); // this registers the user and gives enrollment secret.
 
         // The user would usually be told the enrollment secret out of bounds by the registrar
         //   The user would most likely now run in some other application or instance.
