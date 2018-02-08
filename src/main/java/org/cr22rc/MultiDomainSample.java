@@ -198,7 +198,6 @@ public class MultiDomainSample {
                 false, // No need to instantiate chaincode again.
                 "500"); // 400 move 100 expect 500 in b
 
-
         clientOrg1FooChannel.shutdown(true); // shutdown the channel - start from the beginning.
 
         // Now as user that is just a member to the org created by the Fabric CA registrar.
@@ -212,14 +211,15 @@ public class MultiDomainSample {
 
         registrar.setEnrollment(hfcaClient.enroll("admin", "adminpw")); // needs to enroll with the CA first.
 
-        SampleUser user = new SampleUser(ORG1MSP, "user"); // now this is the user.
-        RegistrationRequest rr = new RegistrationRequest(user.getName(), "org1.department1");
+        final String userName = "user";
 
+        RegistrationRequest rr = new RegistrationRequest(userName, "org1.department1");
         String enrollmentSecret = hfcaClient.register(rr, registrar); // this registers the user and gives enrollment secret.
 
-        // the user would usually be told the enrollment secret out of bounds by the registrar
+        // The user would usually be told the enrollment secret out of bounds by the registrar
         //   The user would most likely now run in some other application or instance.
 
+        SampleUser user = new SampleUser(ORG1MSP, userName); // now this is the user.
         user.setEnrollment(hfcaClient.enroll(user.getName(), enrollmentSecret)); // now the user enrolls
 
         //Reconstruct the channel again as the user.
