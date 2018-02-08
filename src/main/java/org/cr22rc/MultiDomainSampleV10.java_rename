@@ -44,7 +44,6 @@ import org.hyperledger.fabric.sdk.BlockchainInfo;
 import org.hyperledger.fabric.sdk.ChaincodeEndorsementPolicy;
 import org.hyperledger.fabric.sdk.ChaincodeID;
 import org.hyperledger.fabric.sdk.Channel;
-import org.hyperledger.fabric.sdk.Channel.PeerOptions;
 import org.hyperledger.fabric.sdk.ChannelConfiguration;
 import org.hyperledger.fabric.sdk.Enrollment;
 import org.hyperledger.fabric.sdk.EventHub;
@@ -53,7 +52,6 @@ import org.hyperledger.fabric.sdk.InstallProposalRequest;
 import org.hyperledger.fabric.sdk.InstantiateProposalRequest;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
-import org.hyperledger.fabric.sdk.Peer.PeerRole;
 import org.hyperledger.fabric.sdk.ProposalResponse;
 import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
 import org.hyperledger.fabric.sdk.SDKUtils;
@@ -69,9 +67,8 @@ import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hyperledger.fabric.sdk.Channel.PeerOptions.createPeerOptions;
 
-public class MultiDomainSample {
+public class MultiDomainSampleV10 {
 
     private static final int TRANSACTION_WAIT_TIME = 60000 * 6;
     private static final String EXPECTED_EVENT_NAME = "event";
@@ -82,16 +79,17 @@ public class MultiDomainSample {
     private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
     private String testTxID;
 
-    final boolean doV1_0 = false;
+    //final boolean doV1_0 = true;
+    final boolean doV1_0 = true;
 
     //
     private static final String ORG1MSP = "Org1MSP";
     private static final String ORG2MSP = "Org2MSP";
 
     public static void main(String[] args) throws Exception {
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        Security.addProvider(new BouncyCastleProvider());
         System.setProperty("org.hyperledger.fabric.sdk.channel.genesisblock_wait_time", 60000 * 15 + "");
-        new MultiDomainSample().run(args);
+        new MultiDomainSampleV10().run(args);
 
     }
 
@@ -197,7 +195,6 @@ public class MultiDomainSample {
         runChaincodeInChannel(clientOrg2, clientOrg2FooChannel, 0,
                 false, // No need to instantiate chaincode again.
                 "500"); // 400 move 100 expect 500 in b
-
 
         clientOrg1FooChannel.shutdown(true); // shutdown the channel - start from the beginning.
 
@@ -338,25 +335,23 @@ public class MultiDomainSample {
 
         out("Created channel %s", name);
 
-        PeerOptions peerOptions = createPeerOptions();
-        if (!eventHubs.isEmpty()) {
-            peerOptions.setPeerRoles(PeerRole.NO_EVENT_SOURCE.clone()); //use the event hub if any and don't use peer eventing service.
-        }
+//        PeerOptions peerOptions = createPeerOptions();
+//        if (!eventHubs.isEmpty()) {
+//            peerOptions.setPeerRoles(PeerRole.NO_EVENT_SOURCE.clone()); //use the event hub if any and don't use peer eventing service.
+//        }
 
         for (Peer peer : joinPeers) {
-            newChannel.joinPeer(peer, peerOptions);
+            newChannel.joinPeer(peer);
         }
 
         for (Peer peer : addPeers) {
 
-            newChannel.addPeer(peer, peerOptions);
+            newChannel.addPeer(peer);
         }
-
-        peerOptions.addPeerRole(PeerRole.OUT_ORGANIZATION);
 
         for (Peer peer : outPeers) {
 
-            newChannel.addPeer(peer, peerOptions);
+            newChannel.addPeer(peer);
         }
 
         for (EventHub eventHub : eventHubs) {
@@ -402,8 +397,10 @@ public class MultiDomainSample {
                 instantiateProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
                 instantiateProposalRequest.setChaincodeID(chaincodeID);
                 instantiateProposalRequest.setFcn("init");
-                instantiateProposalRequest.setArgs("a", "5000", "b",
-                        "" + (200 + delta)); // start with 200
+                instantiateProposalRequest.setArgs(new String[] {
+                        "a", "5000", "b",
+                        "" + (200 + delta)
+                }); // start with 200
                 Map<String, byte[]> tm = new HashMap<>();
                 tm.put("HyperLedgerFabric", "InstantiateProposalRequest:JavaSDK".getBytes(UTF_8));
                 tm.put("method", "InstantiateProposalRequest".getBytes(UTF_8));
@@ -467,7 +464,7 @@ public class MultiDomainSample {
                     transactionProposalRequest.setChaincodeID(chaincodeID);
                     transactionProposalRequest.setFcn("invoke");
                     transactionProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
-                    transactionProposalRequest.setArgs("move", "a", "b", "100");
+                    transactionProposalRequest.setArgs(new String[] {"move", "a", "b", "100"});
 
                     Map<String, byte[]> tm2 = new HashMap<>();
                     tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8)); //Just some extra junk in transient map
@@ -556,7 +553,7 @@ public class MultiDomainSample {
                     //  String expect = "" + (300 + delta);
                     out("Now query chaincode for the value of b.");
                     QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
-                    queryByChaincodeRequest.setArgs("query", "b");
+                    queryByChaincodeRequest.setArgs(new String[] {"query", "b"});
                     queryByChaincodeRequest.setFcn("invoke");
                     queryByChaincodeRequest.setChaincodeID(chaincodeID);
 
