@@ -120,7 +120,7 @@ public class MultiDomainSample {
             eventhubs = createCollection(clientOrg1eventHubOrg1);
         }
         out("Running as org1 constructed channel and creating actual channel.");
-        Channel clientOrg1FooChannel = constructChannel(CHANNEL_NAME, clientOrg1, peerAdminOrg1,
+        Channel clientOrg1FooChannel = constructChannel(CHANNEL_NAME, clientOrg1,
                 createCollection(clientOrg1orderer),
                 createCollection(clientOrg1peerOrg1), // join peer org1's peer to the channel.
                 Collections.EMPTY_LIST, // no other peers to add at this point. Org2's has not joined the channel yet.!
@@ -157,7 +157,7 @@ public class MultiDomainSample {
             eventhubs = createCollection(clientOrg2eventHubOrg2);
         }
         out("Running as org2 constructing channel.");
-        Channel clientOrg2FooChannel = constructChannel(CHANNEL_NAME, clientOrg2, peerAdminOrg2,
+        Channel clientOrg2FooChannel = constructChannel(CHANNEL_NAME, clientOrg2,
                 createCollection(clientOrg2orderer),
                 createCollection(clientOrg2peerOrg2), // join org2's peer.
                 Collections.EMPTY_LIST,
@@ -183,7 +183,7 @@ public class MultiDomainSample {
             eventhubs = createCollection(clientOrg1eventHubOrg1);
         }
 
-        clientOrg1FooChannel = constructChannel(CHANNEL_NAME, clientOrg1, peerAdminOrg1, createCollection(clientOrg1orderer),
+        clientOrg1FooChannel = constructChannel(CHANNEL_NAME, clientOrg1, createCollection(clientOrg1orderer),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
                 createCollection(clientOrg1peerOrg1), //add both peers to channel
                 createCollection(clientOrg1peerOrg2), //add both peers to channel
@@ -246,7 +246,7 @@ public class MultiDomainSample {
             eventhubs = createCollection(clientOrg1usereventHubOrg1);
         }
 
-        Channel clientOrg1userFooChannel = constructChannel(CHANNEL_NAME, clientOrg1user, peerAdminOrg1, createCollection(clientOrg1userorderer),
+        Channel clientOrg1userFooChannel = constructChannel(CHANNEL_NAME, clientOrg1user, createCollection(clientOrg1userorderer),
                 Collections.EMPTY_LIST, // no need to join peers. Org1's peer has already joined before.
                 createCollection(clientOrg1userpeerOrg1), //add both peers to channel
                 createCollection(clientOrg1userpeerOrg2), //add both peers to channel
@@ -316,7 +316,7 @@ public class MultiDomainSample {
         }
     }
 
-    private Channel constructChannel(String name, HFClient client, User peerAdmin, Collection<Orderer> orderers,
+    private Channel constructChannel(String name, HFClient client, Collection<Orderer> orderers,
                                      Collection<Peer> joinPeers,
                                      Collection<Peer> addPeers,
                                      Collection<Peer> outPeers,
@@ -337,7 +337,7 @@ public class MultiDomainSample {
         Channel newChannel;
         if (createChannel) {
             ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/foo.tx"));
-            newChannel = client.newChannel(name, anOrderer, channelConfiguration, client.getChannelConfigurationSignature(channelConfiguration, peerAdmin));
+            newChannel = client.newChannel(name, anOrderer, channelConfiguration, client.getChannelConfigurationSignature(channelConfiguration, client.getUserContext()));
         } else {
             newChannel = client.newChannel(name);
             newChannel.addOrderer(anOrderer);
@@ -361,7 +361,7 @@ public class MultiDomainSample {
             newChannel.addPeer(peer, peerOptions);
         }
 
-        peerOptions.addPeerRole(PeerRole.OUT_ORGANIZATION);
+        //      peerOptions.addPeerRole(PeerRole.OUT_ORGANIZATION);
 
         for (Peer peer : outPeers) {
 
