@@ -5,4 +5,4 @@ Main sample code is in [ /src/main/java/org/cr22rc/MultiDomainSample.java ](http
 
 Once Fabric network from SDK is running you can run this sample with:
 
-`mvn  clean install exec:java -Dexec.mainClass="org.cr22rc.MultiDomainSample"`
+`MAVEN_OPTS=-ea mvn  clean install exec:java -Dexec.mainClass="org.cr22rc.MultiDomainSample"`
