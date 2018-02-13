@@ -81,6 +81,12 @@ public class MultiDomainSample {
     private static final long PROPOSAL_WAIT_TIME = 60000 * 5;
     private static final byte[] EXPECTED_EVENT_DATA = "!".getBytes(UTF_8);
     private static final String CHANNEL_NAME = "foo";
+    private static final String PEER_ORG1_URL = "grpc://localhost:7051";
+    private static final String PEER_ORG2_URL = "grpc://localhost:8051";
+    private static final String ORDERER_URL = "grpc://localhost:7050";
+    private static final String EVENT_HUB_ORG1_URL = "grpc://localhost:7053";
+    private static final String EVENT_HUB_ORG2_URL = "grpc://localhost:8053";
+    private static final String HFCA_ORG1_URL = "http://localhost:7054";
     private String testTxID;
 
     private static final boolean doV1_0 = false; // true forces use of event hubs.
@@ -111,12 +117,12 @@ public class MultiDomainSample {
         peerAdminOrg1.setEnrollment(new SampleEnrollment(privateKeyAdminOrg1, certificateAdminOrg1));
         clientOrg1.setUserContext(peerAdminOrg1);
 
-        Orderer clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        Orderer clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", ORDERER_URL);
 
-        Peer clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
+        Peer clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", PEER_ORG1_URL);
         Collection<EventHub> eventhubs = Collections.EMPTY_LIST;
         if (doV1_0) {
-            EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_eventhub0.org1.example.com", "grpc://localhost:7053");
+            EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_eventhub0.org1.example.com", EVENT_HUB_ORG1_URL);
             eventhubs = createCollection(clientOrg1eventHubOrg1);
         }
         out("Running as org1 constructed channel and creating actual channel.");
@@ -147,13 +153,13 @@ public class MultiDomainSample {
         peerAdminOrg2.setEnrollment(new SampleEnrollment(privateKeyAdminOrg2, certificatePeerAdminOrg2));
         clientOrg2.setUserContext(peerAdminOrg2);
 
-        Orderer clientOrg2orderer = clientOrg2.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        Orderer clientOrg2orderer = clientOrg2.newOrderer("orderer.example.com", ORDERER_URL);
 
-        Peer clientOrg2peerOrg1 = clientOrg2.newPeer("clientOrg2_peer0.org1.example.com", "grpc://localhost:7051");
-        Peer clientOrg2peerOrg2 = clientOrg2.newPeer("clientOrg2_peer0.org2.example.com", "grpc://localhost:8051");
+        Peer clientOrg2peerOrg1 = clientOrg2.newPeer("clientOrg2_peer0.org1.example.com", PEER_ORG1_URL);
+        Peer clientOrg2peerOrg2 = clientOrg2.newPeer("clientOrg2_peer0.org2.example.com", PEER_ORG2_URL);
         eventhubs = Collections.EMPTY_LIST;
         if (doV1_0) {
-            EventHub clientOrg2eventHubOrg2 = clientOrg2.newEventHub("clientOrg2_eventhub0.org2.example.com", "grpc://localhost:8053");
+            EventHub clientOrg2eventHubOrg2 = clientOrg2.newEventHub("clientOrg2_eventhub0.org2.example.com", EVENT_HUB_ORG2_URL);
             eventhubs = createCollection(clientOrg2eventHubOrg2);
         }
         out("Running as org2 constructing channel.");
@@ -173,13 +179,13 @@ public class MultiDomainSample {
 
         out("\nRunning as org1 - recreating channel with both peers now.");
 
-        clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        clientOrg1orderer = clientOrg1.newOrderer("orderer.example.com", ORDERER_URL);
 
-        clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", "grpc://localhost:7051");
-        Peer clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", "grpc://localhost:8051");
+        clientOrg1peerOrg1 = clientOrg1.newPeer("clientOrg1_peer0.org1.example.com", PEER_ORG1_URL);
+        Peer clientOrg1peerOrg2 = clientOrg1.newPeer("clientOrg1_peer0.org2.example.com", PEER_ORG2_URL);
         eventhubs = Collections.EMPTY_LIST;
         if (doV1_0) {
-            EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_eventhub0.org1.example.com", "grpc://localhost:7053");
+            EventHub clientOrg1eventHubOrg1 = clientOrg1.newEventHub("clientOrg1_eventhub0.org1.example.com", EVENT_HUB_ORG1_URL);
             eventhubs = createCollection(clientOrg1eventHubOrg1);
         }
 
@@ -211,7 +217,7 @@ public class MultiDomainSample {
         // Now as user that is just a member to the org created by the Fabric CA registrar.
 
         //Create Fabric CA client.
-        final HFCAClient hfcaClient = HFCAClient.createNewInstance("http://localhost:7054", null);
+        final HFCAClient hfcaClient = HFCAClient.createNewInstance(HFCA_ORG1_URL, null);
         hfcaClient.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser registrar = new SampleUser(ORG1MSP, "admin");  // this is the fabric ca registrar that register new members.
@@ -236,13 +242,13 @@ public class MultiDomainSample {
         clientOrg1user.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
         clientOrg1user.setUserContext(user); // set on the client user context so everything is done with the user's credentials.
 
-        Orderer clientOrg1userorderer = clientOrg1user.newOrderer("orderer.example.com", "grpc://localhost:7050");
+        Orderer clientOrg1userorderer = clientOrg1user.newOrderer("orderer.example.com", ORDERER_URL);
 
-        Peer clientOrg1userpeerOrg1 = clientOrg1user.newPeer("clientOrg1user_peer0.org1.example.com", "grpc://localhost:7051");
-        Peer clientOrg1userpeerOrg2 = clientOrg1user.newPeer("clientOrg1user_peer0.org2.example.com", "grpc://localhost:8051");
+        Peer clientOrg1userpeerOrg1 = clientOrg1user.newPeer("clientOrg1user_peer0.org1.example.com", PEER_ORG1_URL);
+        Peer clientOrg1userpeerOrg2 = clientOrg1user.newPeer("clientOrg1user_peer0.org2.example.com", PEER_ORG2_URL);
         eventhubs = Collections.EMPTY_LIST;
         if (doV1_0) {
-            EventHub clientOrg1usereventHubOrg1 = clientOrg1user.newEventHub("clientOrg1user_eventhub0.org1.example.com", "grpc://localhost:7053");
+            EventHub clientOrg1usereventHubOrg1 = clientOrg1user.newEventHub("clientOrg1user_eventhub0.org1.example.com", EVENT_HUB_ORG1_URL);
             eventhubs = createCollection(clientOrg1usereventHubOrg1);
         }
 
@@ -474,9 +480,9 @@ public class MultiDomainSample {
                     /// Send transaction proposal to all peers
                     TransactionProposalRequest transactionProposalRequest = client.newTransactionProposalRequest();
                     transactionProposalRequest.setChaincodeID(chaincodeID);
-                    transactionProposalRequest.setFcn("invoke");
+                    transactionProposalRequest.setFcn("move");
                     transactionProposalRequest.setProposalWaitTime(PROPOSAL_WAIT_TIME);
-                    transactionProposalRequest.setArgs("move", "a", "b", "100");
+                    transactionProposalRequest.setArgs("a", "b", "100");
 
                     Map<String, byte[]> tm2 = new HashMap<>();
                     tm2.put("HyperLedgerFabric", "TransactionProposalRequest:JavaSDK".getBytes(UTF_8)); //Just some extra junk in transient map
@@ -565,8 +571,8 @@ public class MultiDomainSample {
                     //  String expect = "" + (300 + delta);
                     out("Now query chaincode for the value of b.");
                     QueryByChaincodeRequest queryByChaincodeRequest = client.newQueryProposalRequest();
-                    queryByChaincodeRequest.setArgs("query", "b");
-                    queryByChaincodeRequest.setFcn("invoke");
+                    queryByChaincodeRequest.setArgs("b");
+                    queryByChaincodeRequest.setFcn("query");
                     queryByChaincodeRequest.setChaincodeID(chaincodeID);
 
                     Map<String, byte[]> tm2 = new HashMap<>();
