@@ -71,6 +71,15 @@
                     <cleanupDaemonThreads>false</cleanupDaemonThreads>
                 </configuration>
             </plugin>
+            <!--<plugin>-->
+                <!--<groupId>org.codehaus.mojo</groupId>-->
+                <!--<artifactId>exec-maven-plugin</artifactId>-->
+                <!--<version>1.2.1</version>-->
+                <!--<configuration>-->
+                    <!--<mainClass>org.cr22rc.MultiDomainSampleV10</mainClass>-->
+                    <!--<cleanupDaemonThreads>false</cleanupDaemonThreads>-->
+                <!--</configuration>-->
+            <!--</plugin>-->
         </plugins>
 
     </build>
