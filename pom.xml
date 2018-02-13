@@ -24,7 +24,6 @@
     <packaging>jar</packaging>
 
 
-
     <repositories>
         <repository>
             <id>snapshots-repo</id>
@@ -49,11 +48,35 @@
             <!--<version>1.0.1</version>-->
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/appassembler-maven-plugin -->
+        <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>appassembler-maven-plugin</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
     </dependencies>
 
 
     <build>
         <plugins>
+
+
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <configuration>
+                    <programs>
+                        <program>
+                            <mainClass>org.cr22rc.MultiDomainSample</mainClass>
+                            <id>app</id>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -66,20 +89,22 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.2.1</version>
-                 <configuration>
+                <configuration>
                     <mainClass>org.cr22rc.MultiDomainSample</mainClass>
                     <cleanupDaemonThreads>false</cleanupDaemonThreads>
                 </configuration>
             </plugin>
             <!--<plugin>-->
-                <!--<groupId>org.codehaus.mojo</groupId>-->
-                <!--<artifactId>exec-maven-plugin</artifactId>-->
-                <!--<version>1.2.1</version>-->
-                <!--<configuration>-->
-                    <!--<mainClass>org.cr22rc.MultiDomainSampleV10</mainClass>-->
-                    <!--<cleanupDaemonThreads>false</cleanupDaemonThreads>-->
-                <!--</configuration>-->
+            <!--<groupId>org.codehaus.mojo</groupId>-->
+            <!--<artifactId>exec-maven-plugin</artifactId>-->
+            <!--<version>1.2.1</version>-->
+            <!--<configuration>-->
+            <!--<mainClass>org.cr22rc.MultiDomainSampleV10</mainClass>-->
+            <!--<cleanupDaemonThreads>false</cleanupDaemonThreads>-->
+            <!--</configuration>-->
             <!--</plugin>-->
+
+
         </plugins>
 
     </build>
