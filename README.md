@@ -10,5 +10,6 @@ Once Fabric network from SDK is running you can run this sample with:
 ## generating an applicaiton
 `mvn package appassembler:assemble`
 
-run it with 
-`./target/appassembler/bin/app`
+now run it:
+
+`JAVA_OPTS=-ea ./target/appassembler/bin/app`
