@@ -73,6 +73,8 @@ import static org.hyperledger.fabric.sdk.Channel.PeerOptions.createPeerOptions;
 
 public class MultiDomainSample {
 
+    private static final boolean doV1_0 = false; // true forces use of event hubs.
+
     private static final int TRANSACTION_WAIT_TIME = 60000 * 6;
     private static final String EXPECTED_EVENT_NAME = "event";
     private static final String CHAIN_CODE_NAME = "example_cc_go";
@@ -87,9 +89,8 @@ public class MultiDomainSample {
     private static final String EVENT_HUB_ORG1_URL = "grpc://localhost:7053";
     private static final String EVENT_HUB_ORG2_URL = "grpc://localhost:8053";
     private static final String HFCA_ORG1_URL = "http://localhost:7054";
+    private static final String SRC_TEST_FIXTURE_SDKINTEGRATION_E2E_2_ORGS_CHANNEL = "src/test/fixture/sdkintegration/e2e-2Orgs/" + (doV1_0 ? "v1.0" : "v1.1");
     private String testTxID;
-
-    private static final boolean doV1_0 = false; // true forces use of event hubs.
 
     //
     private static final String ORG1MSP = "Org1MSP";
@@ -111,9 +112,9 @@ public class MultiDomainSample {
         clientOrg1.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser peerAdminOrg1 = new SampleUser(ORG1MSP, "peerOrg1Admin");
-        String certificateAdminOrg1 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
+        String certificateAdminOrg1 = new String(IOUtils.toByteArray(new FileInputStream(new File(SRC_TEST_FIXTURE_SDKINTEGRATION_E2E_2_ORGS_CHANNEL + "/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"))), "UTF-8");
 
-        PrivateKey privateKeyAdminOrg1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/6b32e59640c594cf633ad8c64b5958ef7e5ba2a205cfeefd44a9e982ce624d93_sk")));
+        PrivateKey privateKeyAdminOrg1 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream(SRC_TEST_FIXTURE_SDKINTEGRATION_E2E_2_ORGS_CHANNEL + "/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/581fa072e48dc2a516f664df94ea687447c071f89fc0b783b147956a08929dcc_sk")));
         peerAdminOrg1.setEnrollment(new SampleEnrollment(privateKeyAdminOrg1, certificateAdminOrg1));
         clientOrg1.setUserContext(peerAdminOrg1);
 
@@ -147,9 +148,9 @@ public class MultiDomainSample {
         clientOrg2.setCryptoSuite(CryptoSuite.Factory.getCryptoSuite());
 
         SampleUser peerAdminOrg2 = new SampleUser(ORG2MSP, "peerOrg2Admin");
-        String certificatePeerAdminOrg2 = new String(IOUtils.toByteArray(new FileInputStream(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
+        String certificatePeerAdminOrg2 = new String(IOUtils.toByteArray(new FileInputStream(new File(SRC_TEST_FIXTURE_SDKINTEGRATION_E2E_2_ORGS_CHANNEL + "/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/Admin@org2.example.com-cert.pem"))), "UTF-8");
 
-        PrivateKey privateKeyAdminOrg2 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream("src/test/fixture/sdkintegration/e2e-2Orgs/channel/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/b2e2536de633960859d965f02b296083d1e8aa1e868016417c4e4fb760270b96_sk")));
+        PrivateKey privateKeyAdminOrg2 = getPrivateKeyFromBytes(IOUtils.toByteArray(new FileInputStream(SRC_TEST_FIXTURE_SDKINTEGRATION_E2E_2_ORGS_CHANNEL + "/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/5fcbc56face045c33ad213f276293bbe3c54c2e69936045af5c9c46f38b4eddc_sk")));
         peerAdminOrg2.setEnrollment(new SampleEnrollment(privateKeyAdminOrg2, certificatePeerAdminOrg2));
         clientOrg2.setUserContext(peerAdminOrg2);
 
@@ -342,7 +343,7 @@ public class MultiDomainSample {
         //Create channel that has only one signer that is this orgs peer admin. If channel creation policy needed more signature they would need to be added too.
         Channel newChannel;
         if (createChannel) {
-            ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File("src/test/fixture/sdkintegration/e2e-2Orgs/channel/foo.tx"));
+            ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File(SRC_TEST_FIXTURE_SDKINTEGRATION_E2E_2_ORGS_CHANNEL + "/foo.tx"));
             newChannel = client.newChannel(name, anOrderer, channelConfiguration, client.getChannelConfigurationSignature(channelConfiguration, client.getUserContext()));
         } else {
             newChannel = client.newChannel(name);
